@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16
+    container_name: achievement-hunter-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: achievement
+      POSTGRES_PASSWORD: achievement
+      POSTGRES_DB: achievement_hunter
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Pirmą kartą paleidus sukuriama ir testinė DB
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U achievement -d achievement_hunter"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:

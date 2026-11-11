@@ -1,0 +1,25 @@
+# Priklausomybės
+node_modules/
+
+# Sukompiliuotas kodas
+dist/
+build/
+
+# Aplinkos kintamieji (slapti raktai) – NIEKADA necommitinti
+.env
+.env.*
+!.env.example
+
+# Žurnalai
+*.log
+npm-debug.log*
+
+# Redaktoriai / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Projekto dokumentacija (laikoma ne repozitorijoje)
+*.docx
+~$*
