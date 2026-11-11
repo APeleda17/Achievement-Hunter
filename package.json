@@ -1,0 +1,14 @@
+{
+  "name": "achievement-hunter",
+  "private": true,
+  "description": "Achievement Hunter – Steam žaidimų pasiekimų sekimo sistema",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "test": "npm test --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2"
+  }
+}

@@ -1,0 +1,115 @@
+// „Achievement Hunter“ duomenų modelis – 1 sprintas (NF-02, DB-01..DB-03).
+// Kode modeliai vadinami angliškai, o DB lentelės ir stulpeliai – lietuviškai
+// (per @@map / @map), kaip numatyta projekto dokumentacijoje.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Sąrašas „PasiekimoBusena“ (44 lentelė)
+enum PasiekimoBusena {
+  ATRAKINTAS
+  NEATRAKINTAS
+
+  @@map("pasiekimo_busena")
+}
+
+// Naudotojas – sukuriamas po pirmo sėkmingo prisijungimo per Steam (FR-02).
+// Slaptažodis nesaugomas (AUT-06).
+model User {
+  id                Int       @id @default(autoincrement())
+  // SteamID visada eilutė – JS number praranda 17 skaitmenų tikslumą
+  steamId           String    @unique @map("steam_id")
+  personaName       String    @map("slapyvardis")
+  avatarUrl         String?   @map("avataro_url")
+  // communityvisibilitystate == 3 (FR-04)
+  profilePublic     Boolean   @default(true) @map("profilis_viesas")
+  // Paskutinio sėkmingo bibliotekos atnaujinimo laikas, UTC (FR-11)
+  lastLibrarySyncAt DateTime? @map("paskutinis_atnaujinimas") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("sukurta") @db.Timestamptz(3)
+
+  games        UserGame[]
+  achievements UserAchievement[]
+
+  @@map("naudotojas")
+}
+
+// Žaidimas – bendras visiems naudotojams
+model Game {
+  appId           Int      @id @map("app_id")
+  name            String   @map("pavadinimas")
+  iconUrl         String?  @map("ikonos_url")
+  // null – dar nežinoma; false – Steam: „Requested app has no stats“ (FR-09)
+  hasAchievements Boolean? @map("turi_pasiekimu")
+
+  achievements Achievement[]
+  users        UserGame[]
+
+  @@map("zaidimas")
+}
+
+// Pasiekimas – žaidimo pasiekimo aprašas iš GetSchemaForGame
+model Achievement {
+  id          Int     @id @default(autoincrement())
+  appId       Int     @map("app_id")
+  apiName     String  @map("api_pavadinimas")
+  name        String  @map("pavadinimas")
+  description String? @map("aprasymas")
+  iconUrl     String? @map("ikonos_url")
+
+  game  Game              @relation(fields: [appId], references: [appId], onDelete: Cascade)
+  users UserAchievement[]
+
+  @@unique([appId, apiName])
+  @@map("pasiekimas")
+}
+
+// Žaidimas konkretaus naudotojo bibliotekoje
+model UserGame {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("naudotojo_id")
+  appId           Int       @map("app_id")
+  playtimeMinutes Int       @default(0) @map("zaidimo_laikas_min")
+  // null – pasiekimai dar nesinchronizuoti, progresas nežinomas
+  unlockedCount   Int?      @map("atrakinta")
+  totalCount      Int?      @map("is_viso")
+  // Paskutinio sėkmingo šio žaidimo pasiekimų atnaujinimo laikas, UTC
+  lastSyncedAt    DateTime? @map("paskutinis_atnaujinimas") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [appId], references: [appId], onDelete: Cascade)
+
+  @@unique([userId, appId])
+  @@map("naudotojo_zaidimas")
+}
+
+// Konkretaus naudotojo pasiekimo būsena
+model UserAchievement {
+  id            Int             @id @default(autoincrement())
+  userId        Int             @map("naudotojo_id")
+  achievementId Int             @map("pasiekimo_id")
+  status        PasiekimoBusena @map("busena")
+  unlockedAt    DateTime?       @map("atrakinta_kada") @db.Timestamptz(3)
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("naudotojo_pasiekimas")
+}
+
+// Sesijų lentelė, kurią naudoja connect-pg-simple (FR-02).
+// Stulpelių pavadinimai privalo būti tokie, kokių tikisi biblioteka.
+model Session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire])
+  @@map("sesija")
+}
