@@ -8,6 +8,8 @@ import { errorHandler } from './errors.js';
 import { createSyncService } from './sync/syncService.js';
 import { createLibraryService } from './library/libraryService.js';
 import { createLibraryRouter } from './library/routes.js';
+import { createAchievementsService } from './achievements/achievementsService.js';
+import { createAchievementsRouter } from './achievements/routes.js';
 
 export interface AppDeps {
   prisma: PrismaClient;
@@ -38,6 +40,9 @@ export function createApp(deps: AppDeps) {
   const sync = createSyncService(deps.prisma, deps.steam);
   const library = createLibraryService(deps.prisma, sync);
   app.use('/api', createLibraryRouter(library, sync));
+
+  const achievements = createAchievementsService(deps.prisma, sync);
+  app.use('/api', createAchievementsRouter(achievements));
 
   app.use(errorHandler);
   return app;
