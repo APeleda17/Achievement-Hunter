@@ -4,6 +4,7 @@ node_modules/
 # Sukompiliuotas kodas
 dist/
 build/
+*.tsbuildinfo
 
 # Aplinkos kintamieji (slapti raktai) – NIEKADA necommitinti
 .env
