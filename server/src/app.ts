@@ -5,6 +5,9 @@ import type { SteamClient } from './steam/steamClient.js';
 import { createAuthRouter } from './auth/routes.js';
 import { requireAuth } from './auth/requireAuth.js';
 import { errorHandler } from './errors.js';
+import { createSyncService } from './sync/syncService.js';
+import { createLibraryService } from './library/libraryService.js';
+import { createLibraryRouter } from './library/routes.js';
 
 export interface AppDeps {
   prisma: PrismaClient;
@@ -31,6 +34,10 @@ export function createApp(deps: AppDeps) {
 
   // Visi kiti /api/* – tik prisijungusiems (API-02)
   app.use('/api', requireAuth);
+
+  const sync = createSyncService(deps.prisma, deps.steam);
+  const library = createLibraryService(deps.prisma, sync);
+  app.use('/api', createLibraryRouter(library, sync));
 
   app.use(errorHandler);
   return app;
