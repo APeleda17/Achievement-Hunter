@@ -23,12 +23,14 @@ VGTU kompleksinis projektas, PRIf-23/3 gr. (D. Butrimovičius, M. Rupeika, A. Pe
 - **Serveris** (`server/`): Node.js + Express + TypeScript (`:3000`)
 - **DB**: PostgreSQL 16 (per Docker), Prisma ORM ir migracijos
 - **Testai**: Vitest + supertest
+- **DI**: [Ollama](https://ollama.com) su lokaliu modeliu (numatytasis `gemma4:e2b`)
 
 ## Reikalavimai
 
 - [Node.js](https://nodejs.org/) 20 ar naujesnė versija (kartu įdiegiamas npm)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows – su WSL 2)
 - Git
+- [Ollama](https://ollama.com/download) 
 
 ## Paleidimas lokaliai
 
@@ -85,7 +87,21 @@ npx prisma migrate deploy
 cd ..
 ```
 
-### 5. Paleiskite programą
+### 5. Paruoškite DI modelį (Ollama)
+
+Įdiekite [Ollama](https://ollama.com/download) ir parsisiųskite modelį:
+
+```bash
+ollama pull gemma4:e2b
+```
+
+Patikrinkite, ar veikia: <http://localhost:11434> turi rodyti „Ollama is running“.
+
+Jei trūksta vaizdo plokštės atminties („CUDA error: out of memory“), naudokite mažesnį
+modelį (pvz. `qwen3:4b`) ir pakeiskite `OLLAMA_MODEL` faile `server/.env`.
+Testams Ollama nereikalinga – ji pakeičiama mock'u.
+
+### 6. Paleiskite programą
 
 ```bash
 npm run dev
@@ -94,7 +110,7 @@ npm run dev
 Paleidžiami ir serveris (`:3000`), ir klientas (`:5173`). Atidarykite <http://localhost:5173>.
 Sustabdyti – `Ctrl+C`.
 
-### 6. Paleiskite testus
+### 7. Paleiskite testus
 
 ```bash
 npm test

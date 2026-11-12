@@ -12,6 +12,11 @@ const envSchema = z.object({
   STEAM_API_KEY: z.string().default(''),
   SESSION_SECRET: z.string().min(16, 'server/.env faile nustatykite SESSION_SECRET (bent 16 simbolių)'),
   DATABASE_URL: z.string().min(1, 'server/.env faile nustatykite DATABASE_URL'),
+  // Ollama DI modelis (DIK-01, DIK-04). Numatytosios reikšmės tinka lokaliam darbui.
+  OLLAMA_URL: z.string().url().default('http://localhost:11434'),
+  OLLAMA_MODEL: z.string().min(1).default('gemma4:e2b'),
+  OLLAMA_NUM_CTX: z.coerce.number().int().positive().default(4096),
+  OLLAMA_TIMEOUT_MS: z.coerce.number().int().positive().default(90000),
 });
 
 export const config = envSchema.parse(process.env);
