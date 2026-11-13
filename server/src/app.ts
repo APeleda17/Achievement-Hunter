@@ -10,6 +10,19 @@ import { createLibraryService } from './library/libraryService.js';
 import { createLibraryRouter } from './library/routes.js';
 import { createAchievementsService } from './achievements/achievementsService.js';
 import { createAchievementsRouter } from './achievements/routes.js';
+import { createAiRepo } from './db/aiRepo.js';
+import { createExplainService } from './ai/explainService.js';
+import { createAiRouter } from './ai/routes.js';
+import { createJobQueue, type JobQueue } from './jobs/jobQueue.js';
+import type { AiClient, AiResultDto } from './ai/types.js';
+import { AppError } from './errors.js';
+import { createGuideRepo } from './db/guideRepo.js';
+import { createSourcesRepo } from './db/sourcesRepo.js';
+import { createSourcesService } from './sources/sourcesService.js';
+import type { SourcesCollector } from './sources/types.js';
+import { createGuideService } from './ai/guideService.js';
+import { createHelpRepo } from './db/helpRepo.js';
+import { createHelpService } from './ai/helpService.js';
 
 export interface AppDeps {
   prisma: PrismaClient;
@@ -17,6 +30,9 @@ export interface AppDeps {
   sessionMiddleware: RequestHandler;
   appUrl: string;
   production?: boolean;
+  ai?: AiClient;
+  jobs?: JobQueue<AiResultDto>;
+  sources?: SourcesCollector;
 }
 
 // Express programa kuriama funkcija, kad testuose būtų galima
@@ -43,6 +59,18 @@ export function createApp(deps: AppDeps) {
 
   const achievements = createAchievementsService(deps.prisma, sync);
   app.use('/api', createAchievementsRouter(achievements));
+
+  const jobs = deps.jobs ?? createJobQueue<AiResultDto>();
+  const ai = deps.ai ?? { explain: async () => { throw new AppError(503, 'AI_UNAVAILABLE'); } };
+  const explain = createExplainService(createAiRepo(deps.prisma), ai, jobs);
+  const sources = deps.sources ?? createSourcesService(createSourcesRepo(deps.prisma));
+  const guides = createGuideService(createAiRepo(deps.prisma), createGuideRepo(deps.prisma),
+    sources,
+    { guide: deps.ai?.guide ?? (async () => { throw new AppError(503, 'AI_UNAVAILABLE'); }) }, jobs);
+  const help = createHelpService(createAiRepo(deps.prisma), createHelpRepo(deps.prisma), sources,
+    { help: ai.help ?? (async () => { throw new AppError(503, 'AI_UNAVAILABLE'); }) }, jobs);
+  app.use('/api', createAiRouter(explain, jobs, guides, help));
+  app.locals.disposeAi = () => jobs.dispose();
 
   app.use(errorHandler);
   return app;

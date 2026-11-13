@@ -1,4 +1,4 @@
-// „Achievement Hunter“ duomenų modelis – 1 sprintas (NF-02, DB-01..DB-03).
+// „Achievement Hunter“ duomenų modelis – 1 sprintas ir NI-2, NI-3, NI-5 (2 sprintas).
 // Kode modeliai vadinami angliškai, o DB lentelės ir stulpeliai – lietuviškai
 // (per @@map / @map), kaip numatyta projekto dokumentacijoje.
 
@@ -35,6 +35,7 @@ model User {
 
   games        UserGame[]
   achievements UserAchievement[]
+  helpRequests HelpRequest[]
 
   @@map("naudotojas")
 }
@@ -64,6 +65,10 @@ model Achievement {
 
   game  Game              @relation(fields: [appId], references: [appId], onDelete: Cascade)
   users UserAchievement[]
+  explanation AchievementExplanation?
+  guide Guide?
+  sourceExcerpts SourceExcerpt[]
+  helpRequests HelpRequest[]
 
   @@unique([appId, apiName])
   @@map("pasiekimas")
@@ -112,4 +117,99 @@ model Session {
 
   @@index([expire])
   @@map("sesija")
+}
+
+// NI-2 / DIS-01..02: vienas bendras paaiškinimas vienam pasiekimui.
+// sourceHash leidžia neberodyti paaiškinimo pasikeitus Steam aprašui.
+model AchievementExplanation {
+  id            Int      @id @default(autoincrement())
+  achievementId Int      @unique @map("pasiekimo_id")
+  text          String   @map("tekstas")
+  sourceHash    String   @map("saltinio_kontroline_suma") @db.VarChar(64)
+  model         String   @map("modelis")
+  createdAt     DateTime @default(now()) @map("sukurta") @db.Timestamptz(3)
+
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@map("pasiekimo_paaiskinimas")
+}
+
+enum SourceType {
+  WIKI
+  COMMUNITY_GUIDE @map("BENDRUOMENES_GIDAS")
+  STEAM_GUIDE @map("STEAM_GIDAS")
+  DISCUSSION @map("DISKUSIJA")
+  OTHER @map("KITA")
+  @@map("saltinio_tipas")
+}
+
+model ExternalSource {
+  id Int @id @default(autoincrement())
+  url String @unique
+  title String @map("pavadinimas")
+  type SourceType @map("tipas")
+  fetchedAt DateTime @map("gauta") @db.Timestamptz(3)
+  excerpts SourceExcerpt[]
+  guides GuideSource[]
+  @@map("isorinis_saltinis")
+}
+
+// Techninis kontekstas: to paties URL aktuali ištrauka skiriasi pagal pasiekimą.
+model SourceExcerpt {
+  id Int @id @default(autoincrement())
+  achievementId Int @map("pasiekimo_id")
+  sourceId Int @map("saltinio_id")
+  queryHash String @map("uzklausos_suma") @db.VarChar(64)
+  excerpt String @map("istrauka") @db.VarChar(4000)
+  fetchedAt DateTime @map("gauta") @db.Timestamptz(3)
+  achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
+  source ExternalSource @relation(fields:[sourceId], references:[id], onDelete:Cascade)
+  @@unique([achievementId,sourceId])
+  @@index([achievementId,queryHash,fetchedAt])
+  @@map("saltinio_istrauka")
+}
+
+model Guide {
+  id Int @id @default(autoincrement())
+  achievementId Int @unique @map("pasiekimo_id")
+  inputHash String @map("ivesties_suma") @db.VarChar(64)
+  steps Json @map("zingsniai")
+  model String @map("modelis")
+  hasReliableInfo Boolean @default(true) @map("patikima_informacija")
+  createdAt DateTime @default(now()) @map("sukurta") @db.Timestamptz(3)
+  achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
+  sources GuideSource[]
+  @@map("vadovas")
+}
+
+model GuideSource {
+  guideId Int @map("vadovo_id")
+  sourceId Int @map("saltinio_id")
+  position Int @map("eiles_numeris")
+  excerpt String @map("istrauka") @db.VarChar(4000)
+  fetchedAt DateTime @map("gauta") @db.Timestamptz(3)
+  guide Guide @relation(fields:[guideId], references:[id], onDelete:Cascade)
+  source ExternalSource @relation(fields:[sourceId], references:[id], onDelete:Cascade)
+  @@id([guideId,sourceId])
+  @@unique([guideId,position])
+  @@map("vadovo_saltinis")
+}
+
+// NI-5: private problem/answer pairs with immutable source context.
+model HelpRequest {
+  id Int @id @default(autoincrement())
+  userId Int @map("naudotojo_id")
+  achievementId Int @map("pasiekimo_id")
+  inputHash String @map("ivesties_suma") @db.VarChar(64)
+  problem String @map("problemos_aprasas") @db.VarChar(500)
+  causes Json @map("galimos_priezastys")
+  steps Json @map("sprendimo_zingsniai")
+  sourceSnapshot Json @map("saltiniu_kopija")
+  model String @map("modelis")
+  createdAt DateTime @default(now()) @map("sukurta") @db.Timestamptz(3)
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
+  @@unique([userId,inputHash])
+  @@index([userId,achievementId,createdAt])
+  @@map("pagalbos_uzklausa")
 }

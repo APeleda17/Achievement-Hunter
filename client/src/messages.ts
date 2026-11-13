@@ -10,7 +10,7 @@ export const t = {
   loginHint: 'Prisijungimas vyksta „Steam“ puslapyje – „Achievement Hunter“ jūsų slaptažodžio nemato ir nesaugo.',
   loginFailed: 'Prisijungti nepavyko. Bandykite dar kartą per „Steam“.',
   privacyNote:
-    'Saugome tik jūsų „SteamID“, slapyvardį, avatarą bei žaidimų ir pasiekimų duomenis. ' +
+    'Saugome jūsų „SteamID“, slapyvardį, avatarą, žaidimų ir pasiekimų duomenis bei jūsų pagalbos užklausas su DI atsakymais. ' +
     '„Achievement Hunter“ nėra oficialus „Valve“ produktas.',
   logout: 'Atsijungti',
 
@@ -41,6 +41,58 @@ export const t = {
   locked: 'Neatrakintas',
   unlockedOn: (date: string) => `Atrakinta ${date}`,
   gameNotFound: 'Šis žaidimas jūsų bibliotekoje nerastas.',
+
+  // NI-2: Achievement Redo
+  explain: 'Paaiškinti',
+  explainAction: (name: string) => `Paaiškinti pasiekimą „${name}“`,
+  explanationTitle: 'Paprastesnis paaiškinimas',
+  explanationRegion: (name: string) => `Pasiekimo „${name}“ paaiškinimas`,
+  explanationWaiting: 'Paaiškinimo užklausa laukia eilėje…',
+  explanationGenerating: 'Ruošiamas paprastesnis paaiškinimas…',
+  generatedByAi: 'Sugeneruota DI',
+  aiDisclaimer: 'DI atsakymas gali būti netikslus. Palyginkite jį su originaliu aprašymu.',
+  aiUnavailable: 'DI pagalba šiuo metu nepasiekiama. Pabandykite vėliau arba patikrinkite, ar paleista „Ollama“ ir parsiųstas modelis.',
+  aiInvalidResponse: 'Nepavyko gauti tinkamo trumpesnio paaiškinimo. Originalus aprašymas išsaugotas; galite bandyti dar kartą.',
+  aiTimeout: 'Paaiškinimas užtruko per ilgai. Pabandykite dar kartą.',
+  aiQueueFull: 'DI pagalba šiuo metu užimta. Pabandykite šiek tiek vėliau.',
+  aiNoDescription: 'Šis pasiekimas neturi paaiškinimui tinkamo aprašymo.',
+  aiSourceChanged: 'Pasiekimo aprašymas pasikeitė. Atnaujinkite puslapį ir bandykite dar kartą.',
+  aiJobExpired: 'Paaiškinimo užklausa nebegalioja. Paspauskite „Paaiškinti“ dar kartą.',
+  aiGeneratedAt: (date: string) => `Parengta ${date}`,
+
+  // NI-3: AI Guide
+  guide: 'AI Guide',
+  guideAction: (name: string) => `Parengti pasiekimo „${name}“ vadovą`,
+  guideRegion: (name: string) => `Pasiekimo „${name}“ vadovas`,
+  guideWaiting: 'Vadovo užklausa laukia eilėje…',
+  guideGenerating: 'Ieškoma informacijos ir rengiamas vadovas…',
+  guideNoInfo: 'Patikimos informacijos šiam pasiekimui nerasta. Vadovas nesukurtas.',
+  guideSourcesUnavailable: 'Informacijos šaltiniai šiuo metu nepasiekiami. Pabandykite vėliau.',
+  guideInvalid: 'Nepavyko parengti tinkamo vadovo pagal rastus šaltinius. Pabandykite dar kartą.',
+  guideTimeout: 'Vadovo rengimas užtruko per ilgai. Pabandykite dar kartą.',
+  guideExpired: 'Vadovo užklausa nebegalioja. Paspauskite „AI Guide“ dar kartą.',
+  guideDisclaimer: 'DI atsakymas gali būti netikslus. Patikrinkite nurodytus šaltinius.',
+  guideSources: 'Naudoti šaltiniai',
+  sourceFetchedAt: (date: string) => `Informacija gauta ${date}`,
+
+  // NI-5: I'm Stuck!
+  stuck: 'I’m Stuck!',
+  stuckAction: (name: string) => `Gauti pagalbą pasiekimui „${name}“`,
+  stuckProblem: 'Aprašykite, kur užstrigote (1–500 simbolių)',
+  stuckHint: 'Nurodykite, ką jau bandėte ir kas nepavyko. DI atsakymas bus anglų kalba. Užklausa ir atsakymas bus išsaugoti jūsų istorijoje.',
+  stuckSubmit: 'Gauti pagalbą',
+  stuckInvalid: 'Įveskite nuo 1 iki 500 simbolių problemos aprašymą.',
+  stuckWaiting: 'Pagalbos užklausa laukia eilėje…',
+  stuckGenerating: 'Renkama informacija ir ruošiama pagalba…',
+  stuckCauses: 'Galimos priežastys',
+  stuckSteps: 'Sprendimo žingsniai',
+  stuckNoInfo: 'Patikimos informacijos šiam pasiekimui nerasta. Pagalbos atsakymas nesukurtas.',
+  stuckInvalidAnswer: 'Nepavyko gauti tinkamos pagalbos pagal šaltinius. Bandykite dar kartą.',
+  stuckTimeout: 'Pagalbos rengimas užtruko per ilgai. Bandykite dar kartą.',
+  stuckExpired: 'Pagalbos užklausa nebegalioja. Siųskite ją dar kartą.',
+  stuckHistory: 'Ankstesnės jūsų užklausos',
+  stuckHistoryError: 'Ankstesnių užklausų nepavyko gauti.',
+  stuckAnswerFor: 'Atsakymas į užklausą:',
 
   // Atnaujinimas (NI-8)
   refresh: 'Atnaujinti',

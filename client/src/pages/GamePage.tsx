@@ -5,6 +5,9 @@ import { useAuth } from '../auth';
 import { t } from '../messages';
 import { formatDateTime, formatProgress } from '../format';
 import type { GameAchievements } from '../types';
+import { AchievementRedo } from '../components/AchievementRedo';
+import { AchievementGuide } from '../components/AchievementGuide';
+import { AchievementHelp } from '../components/AchievementHelp';
 import {
   ErrorState,
   Loading,
@@ -109,14 +112,14 @@ export function GamePage() {
             onRefresh={() => void refresh()}
           />
           {notice && <Notice kind={notice.kind}>{notice.text}</Notice>}
-          <AchievementsView data={state.data} />
+          <AchievementsView data={state.data} onUnauthorized={() => void logout()} />
         </>
       )}
     </main>
   );
 }
 
-function AchievementsView({ data }: { data: GameAchievements }) {
+function AchievementsView({ data, onUnauthorized }: { data: GameAchievements; onUnauthorized: () => void }) {
   // FR-09: be pasiekimų – atskiras pranešimas, ne 0 %
   if (!data.hasAchievements || !data.progress) {
     return <p className="empty">{t.noAchievements}</p>;
@@ -143,6 +146,12 @@ function AchievementsView({ data }: { data: GameAchievements }) {
               <p className="achievement-name">{a.name}</p>
               {a.description && <p className="muted small">{a.description}</p>}
               {a.unlocked && a.unlockedAt && <p className="muted small">{t.unlockedOn(formatDateTime(a.unlockedAt))}</p>}
+              <AchievementRedo key={`${data.appId}:${a.apiName}`} appId={data.appId} apiName={a.apiName}
+                name={a.name} description={a.description} onUnauthorized={onUnauthorized} />
+              <AchievementGuide appId={data.appId} apiName={a.apiName} name={a.name}
+                description={a.description} onUnauthorized={onUnauthorized} />
+              <AchievementHelp appId={data.appId} apiName={a.apiName} name={a.name}
+                description={a.description} onUnauthorized={onUnauthorized} />
             </div>
             <span className={`badge ${a.unlocked ? 'badge-unlocked' : 'badge-locked'}`}>
               {a.unlocked ? t.unlocked : t.locked}
