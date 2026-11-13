@@ -17,6 +17,19 @@ VGTU kompleksinis projektas, PRIf-23/3 gr. (D. Butrimovičius, M. Rupeika, A. Pe
 | NI-8 | „Atnaujinti“ – duomenys iš „Steam“, paskutinio atnaujinimo laikas, apsauga nuo sutrikimų | FR-10–FR-13 |
 | – | Naudotojas mato tik savo duomenis | FR-14 |
 
+## 2 sprinto funkcionalumas
+
+| NI | Funkcija |
+|---|---|
+| NI-2 | „Paaiškinti“ – trumpesnis pasiekimo aprašymas |
+| NI-3 | „AI Guide“ – atlikimo žingsniai pagal išorinius šaltinius |
+| NI-4 | Vadovo šaltiniai, datos, DI įspėjimas ir atskiras šaltinių API |
+| NI-5 | „I’m Stuck!“ – 1–500 simbolių problema, galimos priežastys, sprendimai ir privati istorija |
+
+DI atsakymai pateikiami **anglų kalba**, sąsaja – lietuvių. Šio antro sprinto
+realizacija pasiekiama šakoje **`sprint-2-mantas`**. Toliau pateiktos instrukcijos
+skirtos būtent šiai šakai.
+
 ## Technologijos
 
 - **Klientas** (`client/`): React 18 + TypeScript, Vite (dev serveris `:5173`)
@@ -29,28 +42,33 @@ VGTU kompleksinis projektas, PRIf-23/3 gr. (D. Butrimovičius, M. Rupeika, A. Pe
 - [Node.js](https://nodejs.org/) 20 ar naujesnė versija (kartu įdiegiamas npm)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows – su WSL 2)
 - Git
+- [Ollama Windows](https://ollama.com/download/windows) ir modelis `qwen3.5:9b` DI funkcijoms
 
-## Paleidimas lokaliai
+## Paleidimas Windows kompiuteryje (PowerShell)
 
-Visos komandos vykdomos projekto šakniniame aplanke.
+Paleiskite Docker Desktop ir palaukite „Engine running“. Visos komandos vykdomos
+projekto šakniniame aplanke, išskyrus aiškiai parodytą perėjimą į `server/`.
+`npm.cmd` ir `npx.cmd` veikia PowerShell ir neįjungus `.ps1` scenarijų vykdymo.
 
 ### 1. Parsisiųskite projektą ir įdiekite priklausomybes
 
-```bash
-git clone https://github.com/APeleda17/Achievement-Hunter.git
+```powershell
+git clone --branch sprint-2-mantas https://github.com/APeleda17/Achievement-Hunter.git
 cd Achievement-Hunter
-npm run install:all
+npm.cmd run install:all
 ```
 
 `install:all` įdiegia priklausomybes šakniniame aplanke, `server/` ir `client/`.
 
 ### 2. Sukurkite konfigūracijos failą
 
-```bash
-cp .env.example server/.env
+```powershell
+Copy-Item .env.example server/.env
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-(Windows PowerShell: `Copy-Item .env.example server/.env`)
+Antra komanda išveda `SESSION_SECRET` reikšmę. Kopijuokite ją į `server/.env`.
+Šį failą kopijuokite tik pirmą kartą, kad neperrašytumėte savo esamų nustatymų.
 
 Atidarykite `server/.env` ir įrašykite:
 
@@ -59,6 +77,9 @@ Atidarykite `server/.env` ir įrašykite:
 | `STEAM_API_KEY` | „Steam Web API“ raktas (žr. žemiau). Be jo prisijungti galima, bet žaidimų duomenų gauti nepavyks |
 | `SESSION_SECRET` | Ilga atsitiktinė eilutė. Sugeneruoti: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
 | `DATABASE_URL`, `TEST_DATABASE_URL`, `APP_URL`, `PORT` | Palikite, kaip yra – reikšmės atitinka `docker-compose.yml` |
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` – vietinis Ollama serveris |
+| `OLLAMA_MODEL` | `qwen3.5:9b` – turi sutapti su atsisiųsto modelio pavadinimu |
+| `OLLAMA_TIMEOUT_MS` | `90000` – modelio užklausos riba milisekundėmis |
 
 > `server/.env` yra `.gitignore` faile – **niekada jo necommitinkite**. Kiekvienas komandos narys turi savo raktą.
 
@@ -71,37 +92,129 @@ Atidarykite `server/.env` ir įrašykite:
 
 Įsitikinkite, kad Docker Desktop veikia („Engine running“), tada:
 
-```bash
+```powershell
 docker compose up -d
+docker compose ps
 ```
 
 Pirmą kartą sukuriamos dvi DB: `achievement_hunter` (kūrimui) ir `achievement_hunter_test` (testams).
+Prie `db` turi būti rodoma būsena `healthy`; kol DB startuoja, kitų žingsnių nevykdykite.
 
 ### 4. Pritaikykite migracijas
 
-```bash
+```powershell
 cd server
-npx prisma migrate deploy
+npx.cmd prisma migrate deploy
+npx.cmd prisma generate
 cd ..
 ```
 
-### 5. Paleiskite programą
+Pritaikomos visos repozitorijos migracijos, įskaitant NI-2, NI-3 ir NI-5 lenteles.
+`prisma generate` atnaujina kliento kodą pagal esamą schemą. Vykdykite sustabdę
+programos serverį; Windows atveju veikiantis serveris gali laikyti Prisma DLL užrakintą.
 
-```bash
-npm run dev
+### 5. Paruoškite ir patikrinkite Ollama
+
+Įdiekite Ollama, paleiskite ją iš Start meniu ir atidarykite naują PowerShell langą.
+Vieną kartą atsisiųskite modelį, tada patikrinkite jį:
+
+```powershell
+ollama pull qwen3.5:9b
+ollama ls
+Invoke-RestMethod http://127.0.0.1:11434/api/tags
 ```
 
-Paleidžiami ir serveris (`:3000`), ir klientas (`:5173`). Atidarykite <http://localhost:5173>.
-Sustabdyti – `Ctrl+C`.
+Abiejose patikrose turi būti `qwen3.5:9b`. Modelio nereikia siųstis kiekvieną kartą.
+Windows programėlė Ollama paleidžia fone. Jei naudojate vien CLI ir serveris neveikia,
+atskirame terminale paleiskite `ollama serve` ir palikite jį atidarytą.
+Jei prievadas 11434 jau užimtas veikiančios Ollama, antros instancijos nepaleiskite.
+Oficialios instrukcijos: [Windows](https://docs.ollama.com/windows),
+[CLI](https://docs.ollama.com/cli).
 
-### 6. Paleiskite testus
+Steam funkcijoms Ollama nereikalinga. Naujiems „AI Guide“ ir „I’m Stuck!“ atsakymams
+reikia ir interneto prieigos prie viešų šaltinių. Modelis parenkamas serveryje;
+klientui nereikia atskiro DI API rakto. Lėtesniame kompiuteryje generavimas gali
+netilpti į 90 s ribą; pakeitus modelį reikia iš naujo įvertinti atsakymų kokybę.
 
-```bash
-npm test
+### 6. Patikrinkite testus ir surinkimą
+
+```powershell
+npm.cmd test
+npm.cmd run build
 ```
 
 Testams reikia veikiančios DB (3 žingsnis). Testai naudoja **atskirą** DB `achievement_hunter_test`,
-o „Steam“ juose pakeičiamas mock'u – raktas nereikalingas ir tikros užklausos nesiunčiamos.
+o Steam, išoriniai šaltiniai ir Ollama pagal nutylėjimą pakeičiami valdomais pakaitalais.
+Pasirenkami tikro modelio testai įjungiami atskirai, kaip aprašyta NI skyriuose žemiau.
+
+### 7. Paleiskite svetainę
+
+```powershell
+npm.cmd run dev
+```
+
+Paleidžiami serveris (`:3000`) ir klientas (`:5173`). Atidarykite
+**<http://localhost:5173>**, prisijunkite per Steam ir pasirinkite žaidimą.
+Prie pasiekimų rasite „Paaiškinti“, „AI Guide“ ir „I’m Stuck!“.
+Visada naudokite tą patį `localhost` adresą, kaip `APP_URL` nustatyme.
+
+Kitame PowerShell lange galite patikrinti API per kliento proxy:
+
+```powershell
+Invoke-RestMethod http://localhost:5173/api/health
+```
+
+Turi grįžti `status: ok`. Tai tik serverio pasiekiamumo patikra; Steam raktą ir DI
+patikrinkite prisijungę per svetainę. Sustabdyti serverį ir klientą – `Ctrl+C`;
+DB sustabdyti – `docker compose stop`.
+
+## Jei projektą jau turite
+
+Sustabdykite `npm run dev` su `Ctrl+C`. Pirmiausia išsaugokite savo nebaigtus kodo
+pakeitimus; `git status` parodys, ar jų yra. Tada projekto šaknyje:
+
+```powershell
+git fetch origin
+git switch sprint-2-mantas
+git pull --ff-only origin sprint-2-mantas
+npm.cmd run install:all
+docker compose up -d
+```
+
+Palaukite `healthy` būsenos (`docker compose ps`), tada:
+
+```powershell
+cd server
+npx.cmd prisma migrate deploy
+npx.cmd prisma generate
+cd ..
+npm.cmd test
+npm.cmd run dev
+```
+
+Esamo `server/.env` neperrašykite. Palyginkite jį su `.env.example`, papildykite
+trūkstamus `OLLAMA_*` laukus ir vieną kartą atlikite Ollama paruošimą aukščiau.
+Naršyklėje po atnaujinimo paspauskite `Ctrl+F5`.
+
+## Dažnos paleidimo problemos
+
+| Problema | Ką patikrinti |
+|---|---|
+| `docker_engine` / Docker daemon nepasiekiamas | Paleiskite Docker Desktop ir palaukite „Engine running“ |
+| Užimtas 5432 prievadas | Ar jau veikia vietinis PostgreSQL arba kito projekto DB? Pasirinkite vieną šio projekto DB instanciją |
+| `SESSION_SECRET` klaida | Ar sukurtas `server/.env` ir įrašyta sugeneruota paslaptis? |
+| Prisma DLL `EPERM` / `operation not permitted` | Sustabdykite šio projekto serverį ir pakartokite `npx.cmd prisma generate` iš `server/` |
+| `ollama` komanda nerasta | Įdiekite Ollama ir atidarykite naują terminalą |
+| DI nepasiekiamas / modelis nerastas | Paleiskite Ollama, patikrinkite `/api/tags`, `ollama ls` ir `OLLAMA_MODEL`; po `.env` pakeitimo perkraukite serverį |
+| Vadovui nerasta patikimos informacijos | Viešas šaltinis gali būti nepasiekiamas arba neturėti tinkamo teksto; tai nėra Steam API rakto klaida |
+| Svetainė atsidaro kitu prievadu | Atlaisvinkite 5173 ir paleiskite iš naujo; jis turi sutapti su `APP_URL` |
+| Testai neranda `achievement_hunter_test` | Testinė DB kuriama tik pirmą kartą inicializuojant Docker DB; esamam tomui žr. komandą žemiau |
+
+Tik jei testinės DB dar nėra, ją sukurkite neištrindami kūrimo duomenų:
+
+```powershell
+docker compose exec db psql -U achievement -d postgres -c "CREATE DATABASE achievement_hunter_test OWNER achievement;"
+```
 
 ## Kad matytumėte savo žaidimus
 
@@ -139,6 +252,9 @@ server/                 Express + TS
   src/sync/        ATN  Duomenų atnaujinimas (viena transakcija)
   src/steam/       SDG  Steam Web API klientas (timeout, pakartojimas)
   src/db/          DPK  Duomenų prieiga
+  src/ai/          DIS, DIK  DI funkcijos, Ollama adapteriai ir API
+  src/sources/     ISR  Viešų šaltinių paieška ir ištraukos
+  src/jobs/        EIL  Bendra DI užduočių eilė
   tests/                Vitest + supertest testai
 docker-compose.yml      PostgreSQL
 .env.example            Konfigūracijos pavyzdys
@@ -146,7 +262,8 @@ docker-compose.yml      PostgreSQL
 
 ## REST API
 
-Visi `/api/*` endpointai reikalauja prisijungimo (kitaip – `401`). Naudotojas visada nustatomas pagal sesiją.
+Visi `/api/*` endpointai, išskyrus viešą `/api/health`, reikalauja prisijungimo
+(kitaip – `401`). Naudotojas visada nustatomas pagal sesiją.
 
 | Metodas | Adresas | Paskirtis |
 |---|---|---|
@@ -158,6 +275,13 @@ Visi `/api/*` endpointai reikalauja prisijungimo (kitaip – `401`). Naudotojas 
 | GET | `/api/games/:appId/achievements` | Žaidimo pasiekimai ir progresas |
 | POST | `/api/sync` | Atnaujinti visą biblioteką |
 | POST | `/api/games/:appId/sync` | Atnaujinti vieno žaidimo pasiekimus |
+| GET | `/api/health` | Vieša serverio pasiekiamumo patikra |
+| POST | `/api/ai/explain` | Trumpesnis pasiekimo aprašymas |
+| POST | `/api/ai/guide` | Vadovo generavimas arba išsaugotas atsakymas |
+| GET | `/api/guides/:id/sources` | Išsaugoto vadovo šaltiniai ir datos |
+| POST | `/api/ai/help` | Pagalba pagal 1–500 simbolių problemą |
+| GET | `/api/ai/help?appId=&apiName=` | Privati pasiekimo pagalbos istorija |
+| GET | `/api/jobs/:id` | Savo DI užduoties būsena ir rezultatas |
 
 Klaidos grąžinamos formatu `{ "error": { "code": "..." } }`. Kodai: `UNAUTHORIZED`, `AUTH_FAILED`, `PROFILE_PRIVATE`,
 `NOT_FOUND`, `VALIDATION_ERROR`, `STEAM_UNAVAILABLE` (su `hasCachedData`), `SYNC_IN_PROGRESS` (`409`).
