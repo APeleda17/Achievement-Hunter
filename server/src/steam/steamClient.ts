@@ -61,6 +61,8 @@ export interface SteamClient {
   getSchemaForGame(appId: number): Promise<SchemaAchievement[]>;
   /** null – „Requested app has no stats“ */
   getPlayerAchievements(steamId: string, appId: number): Promise<PlayerAchievement[] | null>;
+    /** SDG-05: visų žaidėjų atrakinimo procentas, apiName → 0–100. Tuščias – žaidimas be statistikos. */
+  getGlobalAchievementPercentages(appId: number): Promise<Map<string, number>>;
 }
 
 // ---- Steam atsakymų schemos (SDG-04) ----
@@ -125,6 +127,20 @@ const playerAchievementsSchema = z.object({
           apiname: z.string(),
           achieved: z.number(),
           unlocktime: z.number(),
+        }),
+      )
+      .optional(),
+  }),
+});
+
+// Steam procentą kartais grąžina skaičiumi, kartais eilute ("12.3"), todėl abu variantai priimami
+const globalPercentagesSchema = z.object({
+  achievementpercentages: z.object({
+    achievements: z
+      .array(
+        z.object({
+          name: z.string(),
+          percent: z.coerce.number().min(0).max(100),
         }),
       )
       .optional(),
@@ -251,6 +267,19 @@ export function createSteamClient(apiKey: string): SteamClient {
         achieved: a.achieved === 1,
         unlockedAt: a.achieved === 1 && a.unlocktime > 0 ? new Date(a.unlocktime * 1000) : null,
       }));
+    },
+    
+    async getGlobalAchievementPercentages(appId) {
+      // 400 / 403 / 404 – žaidimas neturi viešos pasiekimų statistikos
+      const { status, data } = await call(
+        'GetGlobalAchievementPercentagesForApp',
+        'ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/',
+        { gameid: String(appId) },
+        globalPercentagesSchema.catch({ achievementpercentages: {} }),
+        [400, 403, 404],
+      );
+      if (status !== 200) return new Map();
+      return new Map((data.achievementpercentages.achievements ?? []).map((a) => [a.name, a.percent]));
     },
   };
 }
