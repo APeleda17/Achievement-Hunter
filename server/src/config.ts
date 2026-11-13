@@ -10,6 +10,9 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:5173'),
   // Gali būti tuščias – tada Steam užklausos grąžins STEAM_UNAVAILABLE.
   STEAM_API_KEY: z.string().default(''),
+  OLLAMA_BASE_URL: z.string().url().refine((value) => /^https?:\/\//.test(value)).default('http://127.0.0.1:11434'),
+  OLLAMA_MODEL: z.string().trim().min(1).default('qwen3.5:9b'),
+  OLLAMA_TIMEOUT_MS: z.coerce.number().int().min(1).max(90_000).default(90_000),
   SESSION_SECRET: z.string().min(16, 'server/.env faile nustatykite SESSION_SECRET (bent 16 simbolių)'),
   DATABASE_URL: z.string().min(1, 'server/.env faile nustatykite DATABASE_URL'),
 });

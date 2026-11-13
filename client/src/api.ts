@@ -1,4 +1,4 @@
-import type { GameAchievements, Library, Me } from './types';
+import type { AiJob, ExplainResponse, GameAchievements, Guide, GuideResponse, Library, Me } from './types';
 
 // Visos užklausos eina į tą patį adresą (Vite proxy → :3000), todėl sesijos slapukas
 // siunčiamas automatiškai. Steam API raktas naršyklėje niekada nenaudojamas.
@@ -19,11 +19,16 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: 'GET' | 'POST', url: string): Promise<T> {
+async function request<T>(method: 'GET' | 'POST', url: string, options: { body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(url, { method, credentials: 'same-origin', headers: { Accept: 'application/json' } });
-  } catch {
+    response = await fetch(url, {
+      method, credentials: 'same-origin', signal: options.signal,
+      headers: { Accept: 'application/json', ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+      ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+    });
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
     throw new ApiError(0, 'NETWORK_ERROR');
   }
 
@@ -45,4 +50,10 @@ export const api = {
   syncLibrary: () => request<Library>('POST', '/api/sync'),
   getAchievements: (appId: number) => request<GameAchievements>('GET', `/api/games/${appId}/achievements`),
   syncGame: (appId: number) => request<GameAchievements>('POST', `/api/games/${appId}/sync`),
+  explain: (appId: number, apiName: string, signal?: AbortSignal) =>
+    request<ExplainResponse>('POST', '/api/ai/explain', { body: { appId, apiName }, signal }),
+  getAiJob: (id: string, signal?: AbortSignal) => request<AiJob>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
+  guide: (appId: number, apiName: string, signal?: AbortSignal) =>
+    request<GuideResponse>('POST', '/api/ai/guide', { body: { appId, apiName }, signal }),
+  getGuideJob: (id: string, signal?: AbortSignal) => request<AiJob<Guide>>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
 };

@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { vi } from 'vitest';
-import { createApp } from '../src/app.js';
+import { afterEach, vi } from 'vitest';
+import { createApp, type AppDeps } from '../src/app.js';
 import { prisma } from '../src/db/prisma.js';
 import { createSessionMiddleware } from '../src/auth/session.js';
 import {
@@ -90,8 +90,12 @@ const sessionMiddleware = createSessionMiddleware({
  * Programa su Steam mock'u.
  * Testinis prisijungimo maršrutas pridedamas TIK čia – programos kode jo nėra.
  */
-export function createTestApp(steam: SteamMock) {
-  const app = createApp({ prisma, steam, sessionMiddleware, appUrl: 'http://localhost:5173' });
+const testApps: ReturnType<typeof createApp>[] = [];
+afterEach(() => { for (const app of testApps.splice(0)) app.locals.disposeAi(); });
+
+export function createTestApp(steam: SteamMock, aiDeps: Pick<Partial<AppDeps>, 'ai' | 'jobs' | 'sources'> = {}) {
+  const app = createApp({ prisma, steam, sessionMiddleware, appUrl: 'http://localhost:5173', ...aiDeps });
+  testApps.push(app);
   app.post('/__test/login', (req, res, next) => {
     req.session.userId = req.body.userId;
     req.session.steamId = req.body.steamId;
@@ -111,7 +115,7 @@ export async function loginAs(app: ReturnType<typeof createTestApp>, steamId: st
 /** Išvalo visas lenteles prieš kiekvieną testą. */
 export async function resetDb() {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE naudotojas, zaidimas, pasiekimas, naudotojo_zaidimas, naudotojo_pasiekimas, sesija RESTART IDENTITY CASCADE',
+    'TRUNCATE naudotojas, zaidimas, pasiekimas, naudotojo_zaidimas, naudotojo_pasiekimas, sesija, isorinis_saltinis RESTART IDENTITY CASCADE',
   );
 }
 

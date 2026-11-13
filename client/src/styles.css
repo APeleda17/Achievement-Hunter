@@ -100,6 +100,15 @@ p { margin: 0 0 8px; }
 .badge-unlocked { background: rgba(63, 182, 123, 0.15); color: var(--success); }
 .badge-locked { background: var(--surface-2); color: var(--muted); }
 
+.achievement-redo { margin-top: 10px; }
+.explain-button { padding: 5px 12px; font-size: 0.85rem; }
+.achievement-redo [role="status"], .achievement-redo [role="alert"] { margin-top: 8px; }
+.ai-explanation { margin-top: 10px; padding: 12px; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--bg); overflow-wrap: anywhere; }
+.achievement-body .ai-explanation p + p { margin-top: 8px; }
+.ai-label { color: var(--accent); font-size: 0.75rem; font-weight: 700; }
+.ai-explanation-text { white-space: pre-wrap; }
+.ai-error { color: var(--warning); }
+
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
@@ -111,3 +120,10 @@ p { margin: 0 0 8px; }
   .achievement { grid-template-columns: 48px 1fr; }
   .achievement .badge { grid-column: 2; justify-self: start; }
 }
+/* NI-3: guide steps and source references */
+.achievement-guide { margin-top: .6rem; }
+.ai-guide { margin-top: .75rem; padding: 1rem; border: 1px solid var(--border, #46516b); border-radius: .5rem; }
+.guide-steps, .guide-sources { padding-left: 1.5rem; }
+.guide-steps li { margin-bottom: .65rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guide-citations { display: inline-flex; gap: .3rem; }
+.guide-sources li { margin-bottom: .5rem; overflow-wrap: anywhere; }
