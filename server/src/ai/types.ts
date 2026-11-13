@@ -32,6 +32,9 @@ export interface GuideDto {
   generatedByAi: true;
   sources: { id: number; title: string; url: string; type: string; fetchedAt: string }[];
 }
+export interface GuideSourcesDto extends Pick<GuideDto, 'generatedAt' | 'generatedByAi' | 'sources'> {
+  guideId: number;
+}
 export interface HelpInput extends GuideInput { problem: string }
 export interface HelpCause { reason: string; sourceIds: number[] }
 export interface HelpAiClient {

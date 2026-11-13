@@ -16,6 +16,13 @@ const explainBody = z.object({
 
 export function createAiRouter(service: ExplainService, jobs: JobQueue<AiResultDto>, guides: GuideService, help: HelpService) {
   const router = Router();
+  router.get('/guides/:id/sources', async (req, res, next) => {
+    try {
+      const parsed = z.string().regex(/^[1-9]\d*$/).transform(Number).pipe(z.number().int().positive().max(2_147_483_647)).safeParse(req.params.id);
+      if (!parsed.success) throw new AppError(400, 'VALIDATION_ERROR');
+      res.json(await guides.sources(currentUserId(req), parsed.data));
+    } catch (error) { next(error); }
+  });
   router.post('/ai/help', async (req, res, next) => {
     try {
       const parsed = explainBody.extend({ problem: problemSchema }).safeParse(req.body);

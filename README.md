@@ -335,6 +335,41 @@ Bandymas naudoja tik `achievement_hunter_test`. Įprastas `npm test` tikrina API
 valdomais pakaitalais; interneto ar veikiančio modelio nereikia. Reikalavimų
 atsekamumas ir praktiniai ribojimai: [NI-3 testavimas](docs/NI-3-testavimas.md).
 
+## NI-4: vadovo šaltinių API
+
+`GET /api/guides/{id}/sources` sinchroniškai grąžina išsaugoto vadovo šaltinius.
+`id` yra vadovo ID iš „AI Guide“ rezultato. Reikalinga prisijungimo sesija ir
+vadovo žaidimas naudotojo bibliotekoje. To paties žaidimo savininkai gali skaityti
+bendrą vadovą; pakeitus užklausos `userId` ar `appId`, prieiga nesuteikiama.
+
+```json
+{
+  "guideId": 1,
+  "generatedAt": "2026-11-13T12:00:00.000Z",
+  "generatedByAi": true,
+  "sources": [{
+    "id": 7,
+    "title": "Half-Life 2 achievement guide",
+    "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=123",
+    "type": "STEAM_GUIDE",
+    "fetchedAt": "2026-11-13T11:00:00.000Z"
+  }]
+}
+```
+
+Grąžinami tik vadovui panaudoti šaltiniai citavimo tvarka ir jų kopijų gavimo datos.
+Ištraukų tekstai, problemų istorija ir naudotojų duomenys negrąžinami. Tai istorinio
+vadovo peržiūra: net senesnis nei 30 d. rezultatas perskaitomas be naujos paieškos,
+DI kvietimo ar užduoties eilėje. Sąsajoje jau rodomos nuorodos, vadovo data ir DI
+netikslumo įspėjimas.
+
+Klaidos: `401 UNAUTHORIZED` be sesijos, `400 VALIDATION_ERROR` netinkamam ID,
+`404 NOT_FOUND` neegzistuojančiam arba neprieinamam vadovui.
+Neleistinas URL sugadintame įraše atmetamas su `502 AI_INVALID_RESPONSE`.
+Papildomų migracijų nereikia.
+
+Prieigos ir metaduomenų testai: `npm test --prefix server -- guideSources.test.ts`.
+
 ## NI-5 „I'm Stuck!“
 
 Prie pasirinkto pasiekimo spauskite **I’m Stuck!**, aprašykite problemą ir spauskite

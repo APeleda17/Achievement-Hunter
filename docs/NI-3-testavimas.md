@@ -71,8 +71,15 @@ grąžinti 200 be pakartotinio modelio kvietimo.
 | GVS-10,11: būsena, rezultatas, DI žyma | `AchievementGuide.test.tsx`: 2 s, pasikartojimas, atšaukimas, šaltinių nuorodos, datos ir įspėjimas |
 
 `API-08` aprašo „I'm Stuck!“ lauką ir nėra šios funkcijos reikalavimas.
-`GET /api/guides/{id}/sources` kaip atskiras NI-4 galinis taškas čia nepridėtas:
-NI-3 atsakymas jau turi tik panaudotų šaltinių metaduomenis ir žingsnių citatas.
+NI-4 papildymas: `GET /api/guides/{id}/sources` sinchroniškai pateikia vadovo
+sudarymo datą ir tik panaudotų šaltinių metaduomenis citavimo tvarka. Sesija ir
+žaidimo priklausomybė tikrinamos kiekvieną kartą; neprieinamas ir neegzistuojantis
+vadovas grąžina tą patį 404. Duomenų prieigos užklausa apribota naudotojo biblioteka.
+Šaltinių ištraukos negrąžinamos, naudojama vadovo kopijoje išsaugota gavimo data,
+o ne vėlesnė bendro šaltinio atnaujinimo data. Skaitant nekviečiami ISR, DIK ar EIL.
+`guideSources.test.ts` tikrina šį API su tikra testine PostgreSQL: 14 atvejų, įskaitant
+401, svetimą / neegzistuojantį vadovą, pašalintą žaidimą, suklastotus parametrus,
+bendrą vadovą turint tą patį žaidimą, netinkamus ID, tvarką ir išlikimą po perkrovimo.
 
 ## Vykdymas
 

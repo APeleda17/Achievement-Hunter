@@ -7,7 +7,7 @@ import { SOURCE_TTL_MS, sourceQueryHash, type GuideEvidence, type SourcesCollect
 import { allowedSourceUrl } from '../sources/registry.js';
 import { GUIDE_PROMPT_VERSION } from './prompts.js';
 import { validateGuide } from './guideValidation.js';
-import type { AiResultDto, GuideAiClient, GuideDto, GuideStep } from './types.js';
+import type { AiResultDto, GuideAiClient, GuideDto, GuideSourcesDto, GuideStep } from './types.js';
 
 const hash = (query: SourceQuery) => createHash('sha256').update(`${GUIDE_PROMPT_VERSION}:${sourceQueryHash(query)}`).digest('hex');
 const dto = (id: number, steps: GuideStep[], model: string, createdAt: Date, sources: GuideEvidence[]): GuideDto => ({
@@ -17,6 +17,14 @@ const dto = (id: number, steps: GuideStep[], model: string, createdAt: Date, sou
 
 export function createGuideService(achievements: AiRepo, repo: GuideRepo, collector: SourcesCollector, ai: GuideAiClient, jobs: JobQueue<AiResultDto>) {
   return {
+    async sources(userId: number, guideId: number): Promise<GuideSourcesDto> {
+      const guide = await repo.findSourcesForUser(userId, guideId);
+      if (!guide) throw new AppError(404, 'NOT_FOUND');
+      if (guide.sources.some(({ source }) => !allowedSourceUrl(source.url))) throw new AppError(502, 'AI_INVALID_RESPONSE');
+      return { guideId: guide.id, generatedAt: guide.createdAt.toISOString(), generatedByAi: true,
+        sources: guide.sources.map(({ source, fetchedAt }) => ({ ...source, fetchedAt: fetchedAt.toISOString() })),
+      };
+    },
     async guide(userId: number, appId: number, apiName: string) {
       const achievement = await achievements.findOwnedAchievement(userId, appId, apiName);
       const query: SourceQuery = { achievementId: achievement.id, appId, name: achievement.name, gameName: achievement.game.name,

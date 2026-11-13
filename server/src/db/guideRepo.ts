@@ -4,6 +4,15 @@ import type { GuideStep } from '../ai/types.js';
 
 export function createGuideRepo(prisma: PrismaClient) {
   return {
+    findSourcesForUser(userId: number, guideId: number) {
+      return prisma.guide.findFirst({
+        where: { id: guideId, hasReliableInfo: true, achievement: { game: { users: { some: { userId } } } } },
+        select: { id: true, createdAt: true, sources: {
+          orderBy: { position: 'asc' },
+          select: { fetchedAt: true, source: { select: { id: true, title: true, url: true, type: true } } },
+        } },
+      });
+    },
     find(achievementId: number) {
       return prisma.guide.findUnique({ where: { achievementId }, include: { sources: { include: { source: true }, orderBy: { position: 'asc' } } } });
     },

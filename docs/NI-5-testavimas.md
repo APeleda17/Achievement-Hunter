@@ -77,4 +77,5 @@ Kliento atšaukimas sustabdo laukimą, o ne naikina jau serverio vykdomą užduo
 Nebaigti darbai laikomi atmintyje; baigti atsakymai lieka PostgreSQL. Ankstesnė
 istorija gali atspindėti senesnes pasiekimo sąlygas, todėl rodoma jos data.
 
-Šis pakeitimas įgyvendina NI-5; atskiras NI-4 vadovo šaltinių API lieka kita užduotis.
+NI-5 testavimas aprašytas šiame faile. Vėliau pridėtas atskiras NI-4 vadovo šaltinių
+API `GET /api/guides/{id}/sources`; jo prieigos bandymai – `guideSources.test.ts`.
