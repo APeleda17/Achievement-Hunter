@@ -21,6 +21,8 @@ import { createSourcesRepo } from './db/sourcesRepo.js';
 import { createSourcesService } from './sources/sourcesService.js';
 import type { SourcesCollector } from './sources/types.js';
 import { createGuideService } from './ai/guideService.js';
+import { createHelpRepo } from './db/helpRepo.js';
+import { createHelpService } from './ai/helpService.js';
 
 export interface AppDeps {
   prisma: PrismaClient;
@@ -61,10 +63,13 @@ export function createApp(deps: AppDeps) {
   const jobs = deps.jobs ?? createJobQueue<AiResultDto>();
   const ai = deps.ai ?? { explain: async () => { throw new AppError(503, 'AI_UNAVAILABLE'); } };
   const explain = createExplainService(createAiRepo(deps.prisma), ai, jobs);
+  const sources = deps.sources ?? createSourcesService(createSourcesRepo(deps.prisma));
   const guides = createGuideService(createAiRepo(deps.prisma), createGuideRepo(deps.prisma),
-    deps.sources ?? createSourcesService(createSourcesRepo(deps.prisma)),
+    sources,
     { guide: deps.ai?.guide ?? (async () => { throw new AppError(503, 'AI_UNAVAILABLE'); }) }, jobs);
-  app.use('/api', createAiRouter(explain, jobs, guides));
+  const help = createHelpService(createAiRepo(deps.prisma), createHelpRepo(deps.prisma), sources,
+    { help: ai.help ?? (async () => { throw new AppError(503, 'AI_UNAVAILABLE'); }) }, jobs);
+  app.use('/api', createAiRouter(explain, jobs, guides, help));
   app.locals.disposeAi = () => jobs.dispose();
 
   app.use(errorHandler);

@@ -1,4 +1,4 @@
-import type { AiJob, ExplainResponse, GameAchievements, Guide, GuideResponse, Library, Me } from './types';
+import type { AiJob, ExplainResponse, GameAchievements, Guide, GuideResponse, HelpAnswer, HelpResponse, Library, Me } from './types';
 
 // Visos užklausos eina į tą patį adresą (Vite proxy → :3000), todėl sesijos slapukas
 // siunčiamas automatiškai. Steam API raktas naršyklėje niekada nenaudojamas.
@@ -56,4 +56,9 @@ export const api = {
   guide: (appId: number, apiName: string, signal?: AbortSignal) =>
     request<GuideResponse>('POST', '/api/ai/guide', { body: { appId, apiName }, signal }),
   getGuideJob: (id: string, signal?: AbortSignal) => request<AiJob<Guide>>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
+  help: (appId: number, apiName: string, problem: string, signal?: AbortSignal) =>
+    request<HelpResponse>('POST', '/api/ai/help', { body: { appId, apiName, problem }, signal }),
+  getHelpJob: (id: string, signal?: AbortSignal) => request<AiJob<HelpAnswer>>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
+  getHelpHistory: (appId: number, apiName: string, signal?: AbortSignal) =>
+    request<{ requests: HelpAnswer[] }>('GET', `/api/ai/help?${new URLSearchParams({ appId: String(appId), apiName })}`, { signal }),
 };

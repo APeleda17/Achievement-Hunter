@@ -1,4 +1,4 @@
-// „Achievement Hunter“ duomenų modelis – 1 sprintas ir NI-2 (2 sprintas).
+// „Achievement Hunter“ duomenų modelis – 1 sprintas ir NI-2, NI-3, NI-5 (2 sprintas).
 // Kode modeliai vadinami angliškai, o DB lentelės ir stulpeliai – lietuviškai
 // (per @@map / @map), kaip numatyta projekto dokumentacijoje.
 
@@ -35,6 +35,7 @@ model User {
 
   games        UserGame[]
   achievements UserAchievement[]
+  helpRequests HelpRequest[]
 
   @@map("naudotojas")
 }
@@ -67,6 +68,7 @@ model Achievement {
   explanation AchievementExplanation?
   guide Guide?
   sourceExcerpts SourceExcerpt[]
+  helpRequests HelpRequest[]
 
   @@unique([appId, apiName])
   @@map("pasiekimas")
@@ -191,4 +193,23 @@ model GuideSource {
   @@id([guideId,sourceId])
   @@unique([guideId,position])
   @@map("vadovo_saltinis")
+}
+
+// NI-5: private problem/answer pairs with immutable source context.
+model HelpRequest {
+  id Int @id @default(autoincrement())
+  userId Int @map("naudotojo_id")
+  achievementId Int @map("pasiekimo_id")
+  inputHash String @map("ivesties_suma") @db.VarChar(64)
+  problem String @map("problemos_aprasas") @db.VarChar(500)
+  causes Json @map("galimos_priezastys")
+  steps Json @map("sprendimo_zingsniai")
+  sourceSnapshot Json @map("saltiniu_kopija")
+  model String @map("modelis")
+  createdAt DateTime @default(now()) @map("sukurta") @db.Timestamptz(3)
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
+  @@unique([userId,inputHash])
+  @@index([userId,achievementId,createdAt])
+  @@map("pagalbos_uzklausa")
 }

@@ -16,6 +16,7 @@ export interface ExplanationDto {
 export interface AiClient {
   explain(input: ExplainInput, signal: AbortSignal): Promise<{ text: string; model: string }>;
   guide?: GuideAiClient['guide'];
+  help?: HelpAiClient['help'];
 }
 
 export interface GuideStep { instruction: string; sourceIds: number[] }
@@ -31,4 +32,10 @@ export interface GuideDto {
   generatedByAi: true;
   sources: { id: number; title: string; url: string; type: string; fetchedAt: string }[];
 }
-export type AiResultDto = ExplanationDto | GuideDto;
+export interface HelpInput extends GuideInput { problem: string }
+export interface HelpCause { reason: string; sourceIds: number[] }
+export interface HelpAiClient {
+  help(input: HelpInput, signal: AbortSignal): Promise<{ causes: HelpCause[]; steps: GuideStep[]; model: string }>;
+}
+export interface HelpDto extends GuideDto { problem: string; causes: HelpCause[] }
+export type AiResultDto = ExplanationDto | GuideDto | HelpDto;

@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { AppError } from '../errors.js';
 import { EXPLAIN_SYSTEM_PROMPT, GUIDE_SYSTEM_PROMPT } from './prompts.js';
-import type { AiClient, GuideAiClient } from './types.js';
+import type { AiClient, GuideAiClient, HelpAiClient } from './types.js';
+import { createOllamaHelp } from './ollamaHelp.js';
 import { validateGuide } from './guideValidation.js';
 import { normalized } from '../sources/extract.js';
+import { missionGoalFor, validateMissionGoal } from './achievementGoals.js';
 
 export const characterCount = (value: string) => [...value.normalize('NFC')].length;
 const explanationSchema = z.object({
@@ -44,15 +46,12 @@ export function createOllamaClient(options: {
   model: string;
   timeoutMs?: number;
   fetch?: typeof fetch;
-}): AiClient & GuideAiClient {
+}): AiClient & GuideAiClient & HelpAiClient {
   const send = options.fetch ?? fetch;
   return {
+    help: createOllamaHelp(options),
     async guide(input, parentSignal) {
-      const missionMatch = /^Complete\s+(.+?)\s+on\s+(.+?)[.!]?$/i.exec(input.description.trim());
-      const missionGoal = normalized(input.gameName).includes('call of duty') && missionMatch
-        && !/campaign|entire game|whole game|all missions|every mission/i.test(missionMatch[1])
-        && /hardened|veteran|realistic/i.test(missionMatch[2])
-        ? { name: missionMatch[1], difficulties: missionMatch[2] } : undefined;
+      const missionGoal = missionGoalFor(input);
       const condition = normalized(input.description);
       const sparseEvidence = input.sources.every((source) => {
         const remainder = normalized(source.excerpt).replace(normalized(input.name), '').replace(condition, '').trim();
@@ -100,10 +99,7 @@ export function createOllamaClient(options: {
             if (!parsed.hasReliableInfo) throw new AppError(422, 'NO_RELIABLE_INFO');
             if (parsed.steps.length > maxSteps) throw new AppError(502, 'AI_INVALID_RESPONSE');
             const steps = validateGuide(parsed.steps, input.sources);
-            if (missionGoal) {
-              const text = normalized(steps.map((step) => step.instruction).join(' '));
-              if (!text.includes(normalized(missionGoal.name)) || !/\bmission\b/.test(text) || /\b(?:entire|whole|full) campaign\b/.test(text)) throw new AppError(502, 'AI_INVALID_RESPONSE');
-            }
+            validateMissionGoal(steps.map((step) => step.instruction).join(' '), missionGoal);
             return { steps, model: options.model };
           } catch (error) {
             controller.signal.throwIfAborted();

@@ -66,3 +66,8 @@ export interface Guide {
   sources: { id: number; title: string; url: string; type: 'WIKI' | 'STEAM_GUIDE'; fetchedAt: string }[];
 }
 export type GuideResponse = Guide | { jobId: string; status: 'LAUKIA' | 'VYKDOMA' };
+export interface HelpAnswer extends Guide {
+  problem: string;
+  causes: { reason: string; sourceIds: number[] }[];
+}
+export type HelpResponse = HelpAnswer | { jobId: string; status: 'LAUKIA' | 'VYKDOMA' };

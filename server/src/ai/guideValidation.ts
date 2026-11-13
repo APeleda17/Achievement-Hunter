@@ -24,7 +24,12 @@ export function validateGuide(value: unknown, sources: GuideEvidence[], context?
         return other !== target && other.length >= 8 && !normalized(context.description).includes(other) && ` ${last} `.includes(` ${other} `);
       })) throw new AppError(502, 'AI_INVALID_RESPONSE');
   }
-  const result = normalized(parsed.data.map((step) => step.instruction).join(' '));
+  assertParaphrased(parsed.data.map((step) => step.instruction).join(' '), sources);
+  return parsed.data;
+}
+
+export function assertParaphrased(text: string, sources: GuideEvidence[]) {
+  const result = normalized(text);
   const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
   for (const source of sources) {
     const full = normalized(source.excerpt);
@@ -35,5 +40,4 @@ export function validateGuide(value: unknown, sources: GuideEvidence[], context?
       if (copied && result.includes(copied)) throw new AppError(502, 'AI_INVALID_RESPONSE');
     }
   }
-  return parsed.data;
 }

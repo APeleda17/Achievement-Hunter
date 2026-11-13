@@ -7,6 +7,7 @@ import { formatDateTime, formatProgress } from '../format';
 import type { GameAchievements } from '../types';
 import { AchievementRedo } from '../components/AchievementRedo';
 import { AchievementGuide } from '../components/AchievementGuide';
+import { AchievementHelp } from '../components/AchievementHelp';
 import {
   ErrorState,
   Loading,
@@ -148,6 +149,8 @@ function AchievementsView({ data, onUnauthorized }: { data: GameAchievements; on
               <AchievementRedo key={`${data.appId}:${a.apiName}`} appId={data.appId} apiName={a.apiName}
                 name={a.name} description={a.description} onUnauthorized={onUnauthorized} />
               <AchievementGuide appId={data.appId} apiName={a.apiName} name={a.name}
+                description={a.description} onUnauthorized={onUnauthorized} />
+              <AchievementHelp appId={data.appId} apiName={a.apiName} name={a.name}
                 description={a.description} onUnauthorized={onUnauthorized} />
             </div>
             <span className={`badge ${a.unlocked ? 'badge-unlocked' : 'badge-locked'}`}>

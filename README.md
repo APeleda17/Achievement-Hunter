@@ -335,6 +335,58 @@ Bandymas naudoja tik `achievement_hunter_test`. Įprastas `npm test` tikrina API
 valdomais pakaitalais; interneto ar veikiančio modelio nereikia. Reikalavimų
 atsekamumas ir praktiniai ribojimai: [NI-3 testavimas](docs/NI-3-testavimas.md).
 
+## NI-5 „I'm Stuck!“
+
+Prie pasirinkto pasiekimo spauskite **I’m Stuck!**, aprašykite problemą ir spauskite
+**Gauti pagalbą**. Priimama 1–500 simbolių; skaitiklis, kliento ir serverio patikra
+naudoja NFC normalizuotus Unicode simbolius, o kraštiniai tarpai pašalinami.
+Problemą galima rašyti lietuviškai; DI atsakymas pateikiamas anglų kalba.
+
+Rodomos galimos priežastys, sprendimo žingsniai, šaltinių nuorodos, data ir DI
+įspėjimas. Tai galimos priežastys, ne patvirtinta žaidimo klaidos diagnozė.
+Užklausa ir tinkamas atsakymas išsaugomi privačioje `pagalbos_uzklausa` lentelėje.
+Atidarius formą galima pasirinkti vieną iš 10 naujausių savo užklausų šiam pasiekimui.
+
+Naudojama jau paruošta Ollama ir ta pati NI-3 šaltinių paieška; naujo API rakto
+nereikia. Pritaikykite migraciją iš `server/` ir paleiskite serverį iš naujo:
+
+```powershell
+npx prisma migrate deploy
+npx prisma generate
+```
+
+- `POST /api/ai/help`: `{ "appId": 220, "apiName": "ACH_NAME", "problem": "..." }`.
+  Netinkamas aprašas atmetamas 400 kodu prieš kuriant darbą. Svetimi duomenų laukai,
+  šaltinių URL, naudotojo ID ar savavališkas pasiekimo aprašas nepriimami.
+- `200` – išsaugotas to paties naudotojo atsakymas identiškai normalizuotai problemai;
+  `202` – `{ "jobId": "...", "status": "LAUKIA" }`. Būsena tikrinama tuo pačiu
+  `GET /api/jobs/{id}` kas 2 s. NI-2, NI-3 ir NI-5 bendrai vykdo daugiausia du darbus.
+- `GET /api/ai/help?appId=220&apiName=ACH_NAME` pateikia tik prisijungusio naudotojo
+  paskutinius 10 išsaugotų atsakymų. Prieš talpyklą ir istoriją tikrinama žaidimo
+  priklausomybė. Kito naudotojo tokia pati problema nesidalija privačia talpykla.
+- Problema DI perduodama atskiru JSON lauku, tik kartu su tikrais DB pasiekimo
+  duomenimis ir surinktomis ištraukomis. Į viešų šaltinių paiešką problema, sesija ir
+  naudotojo tapatybė nepatenka. Be tinkamų šaltinių modelis nekviečiamas.
+- Tikrinamos citatos, JSON, teksto kopijavimas ir žinomi nepagrįstų instrukcijų
+  požymiai (spėjami klavišai, meniu keliai, naujos „nemirti“ ar paėmimo laiku sąlygos).
+  Netinkamas juodraštis pakartojamas vieną kartą per bendrą 90 s modelio ribą.
+- Atsakymas įrašomas transakcija kartu su problemos tekstu, modeliu, data, priežastimis,
+  žingsniais ir nekintama panaudotų ištraukų kopija. Tas pats rezultatas naudojamas
+  iki 30 d., jei nepasikeitė sąlyga ar šablonas ir panaudoti šaltiniai dar tinkami.
+  Pasenusi talpykla atnaujinama; ankstesnių skirtingų problemų įrašai išlieka istorijoje.
+- Klaidos nekuria tariamo atsakymo istorijoje. Išėjus iš ekrano ar uždarius formą
+  klientas atšaukia laukimą; vykdomas serverio darbas gali baigtis ir išsaugoti atsakymą.
+
+Tikras integracinis bandymas naudoja tik testinę DB ir viešus šaltinius:
+
+```powershell
+$env:RUN_HELP_TESTS='1'
+npm.cmd test --prefix server -- help.live.test.ts
+Remove-Item Env:RUN_HELP_TESTS
+```
+
+Reikalavimų atsekamumas ir rezultatai: [NI-5 testavimas](docs/NI-5-testavimas.md).
+
 ## Darbo su Git tvarka
 
 - `main` – stabili versija, `develop` – kūrimo šaka.

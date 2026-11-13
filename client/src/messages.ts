@@ -10,7 +10,7 @@ export const t = {
   loginHint: 'Prisijungimas vyksta „Steam“ puslapyje – „Achievement Hunter“ jūsų slaptažodžio nemato ir nesaugo.',
   loginFailed: 'Prisijungti nepavyko. Bandykite dar kartą per „Steam“.',
   privacyNote:
-    'Saugome tik jūsų „SteamID“, slapyvardį, avatarą bei žaidimų ir pasiekimų duomenis. ' +
+    'Saugome jūsų „SteamID“, slapyvardį, avatarą, žaidimų ir pasiekimų duomenis bei jūsų pagalbos užklausas su DI atsakymais. ' +
     '„Achievement Hunter“ nėra oficialus „Valve“ produktas.',
   logout: 'Atsijungti',
 
@@ -74,6 +74,25 @@ export const t = {
   guideDisclaimer: 'DI atsakymas gali būti netikslus. Patikrinkite nurodytus šaltinius.',
   guideSources: 'Naudoti šaltiniai',
   sourceFetchedAt: (date: string) => `Informacija gauta ${date}`,
+
+  // NI-5: I'm Stuck!
+  stuck: 'I’m Stuck!',
+  stuckAction: (name: string) => `Gauti pagalbą pasiekimui „${name}“`,
+  stuckProblem: 'Aprašykite, kur užstrigote (1–500 simbolių)',
+  stuckHint: 'Nurodykite, ką jau bandėte ir kas nepavyko. DI atsakymas bus anglų kalba. Užklausa ir atsakymas bus išsaugoti jūsų istorijoje.',
+  stuckSubmit: 'Gauti pagalbą',
+  stuckInvalid: 'Įveskite nuo 1 iki 500 simbolių problemos aprašymą.',
+  stuckWaiting: 'Pagalbos užklausa laukia eilėje…',
+  stuckGenerating: 'Renkama informacija ir ruošiama pagalba…',
+  stuckCauses: 'Galimos priežastys',
+  stuckSteps: 'Sprendimo žingsniai',
+  stuckNoInfo: 'Patikimos informacijos šiam pasiekimui nerasta. Pagalbos atsakymas nesukurtas.',
+  stuckInvalidAnswer: 'Nepavyko gauti tinkamos pagalbos pagal šaltinius. Bandykite dar kartą.',
+  stuckTimeout: 'Pagalbos rengimas užtruko per ilgai. Bandykite dar kartą.',
+  stuckExpired: 'Pagalbos užklausa nebegalioja. Siųskite ją dar kartą.',
+  stuckHistory: 'Ankstesnės jūsų užklausos',
+  stuckHistoryError: 'Ankstesnių užklausų nepavyko gauti.',
+  stuckAnswerFor: 'Atsakymas į užklausą:',
 
   // Atnaujinimas (NI-8)
   refresh: 'Atnaujinti',
