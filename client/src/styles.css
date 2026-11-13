@@ -101,7 +101,13 @@ p { margin: 0 0 8px; }
 .badge-locked { background: var(--surface-2); color: var(--muted); }
 
 .achievement-redo { margin-top: 10px; }
-.explain-button { padding: 5px 12px; font-size: 0.85rem; }
+.achievement-redo > .button,
+.achievement-guide > .button,
+.achievement-help > .button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 8rem; max-width: 100%; height: 2.875rem;
+  padding: 10px 12px; font-size: 1rem; line-height: 1.5; white-space: nowrap;
+}
 .achievement-redo [role="status"], .achievement-redo [role="alert"] { margin-top: 8px; }
 .ai-explanation { margin-top: 10px; padding: 12px; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--bg); overflow-wrap: anywhere; }
 .achievement-body .ai-explanation p + p { margin-top: 8px; }
