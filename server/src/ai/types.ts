@@ -120,6 +120,16 @@ export interface PlanDto {
   generatedByAi: true;
   criteria: PlanCriteriaDto;
   totalMinutes: number;
+  progress: PlanProgressDto;
   items: PlanItemDto[];
+}
+export interface PlanProgressDto { done: number; total: number; percent: number }
+export interface PlanSummaryDto {
+  id: number;
+  appId: number;
+  gameName: string;
+  createdAt: string;
+  totalMinutes: number;
+  progress: PlanProgressDto;
 }
 export type AiResultDto = ExplanationDto | GuideDto | HelpDto | AvailabilityDto | PlanDto;

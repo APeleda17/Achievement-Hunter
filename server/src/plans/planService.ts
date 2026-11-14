@@ -5,7 +5,7 @@ import type { PlanRepo } from '../db/planRepo.js';
 import type { JobQueue } from '../jobs/jobQueue.js';
 import { PLAN_PROMPT_VERSION, validatePlan } from '../ai/ollamaPlan.js';
 import type { AiResultDto, PlanAiClient, PlanCandidate, PlanCriteriaDto } from '../ai/types.js';
-import { toPlanDto } from './planDto.js';
+import { toPlanDto, toPlanSummaryDto } from './planDto.js';
 
 // PLN-01..03: „Achievement Hunting“ plano sudarymas (NI-12, U14).
 
@@ -83,7 +83,26 @@ export function createPlanService(prisma: PrismaClient, plans: PlanRepo, ai: Pla
         if (!stored) throw new AppError(404, 'NOT_FOUND');
         return toPlanDto(stored);
       });
-      return { kind: 'job' as const, job };
+            return { kind: 'job' as const, job };
+    },
+
+    async list(userId: number, appId?: number) {
+      return (await plans.listPlans(userId, appId)).map(toPlanSummaryDto);
+    },
+
+    async get(userId: number, planId: number) {
+      await plans.markUnlockedItemsDone(userId, planId);
+      const plan = await plans.getPlan(userId, planId);
+      if (!plan) throw new AppError(404, 'NOT_FOUND');
+      return toPlanDto(plan);
+    },
+
+    async setItemStatus(userId: number, planId: number, itemId: number, status: 'ATLIKTAS' | 'NEATLIKTAS') {
+      const updated = await plans.setItemStatus(userId, planId, itemId, status === 'ATLIKTAS' ? 'DONE' : 'NOT_DONE');
+      if (!updated) throw new AppError(404, 'NOT_FOUND');
+      const plan = await plans.getPlan(userId, planId);
+      if (!plan) throw new AppError(404, 'NOT_FOUND');
+      return toPlanDto(plan);
     },
   };
 }

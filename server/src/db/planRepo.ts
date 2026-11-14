@@ -1,7 +1,5 @@
 import type { Difficulty, PlanItemStatus, PrismaClient } from '@prisma/client';
 
-// DPK-06: „Achievement Hunting“ planų duomenų prieiga (NI-12, NI-13).
-// Naudotojas visada tikrinamas pačioje užklausoje (FR-14 principas), ne po jos.
 
 export interface PlanCriteriaInput {
   availableMinutes: number;
@@ -40,16 +38,31 @@ export function createPlanRepo(prisma: PrismaClient) {
       );
     },
 
-    /** Tik šio naudotojo planai, naujausi pirmi, su punktų skaičiumi. */
-    listPlans(userId: number) {
+    listPlans(userId: number, appId?: number) {
       return prisma.collectionPlan.findMany({
-        where: { userId },
+        where: { userId, ...(appId !== undefined ? { appId } : {}) },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        include: { game: { select: { name: true } }, _count: { select: { items: true } } },
+        include: {
+          game: { select: { name: true } },
+          _count: { select: { items: true } },
+          items: { select: { status: true, estimatedMinutes: true } },
+        },
       });
     },
 
-    /** Planas su kriterijais ir punktais; svetimas ar neegzistuojantis planas → null. */
+    async markUnlockedItemsDone(userId: number, planId: number) {
+      const { count } = await prisma.planItem.updateMany({
+        where: {
+          planId,
+          plan: { userId },
+          status: 'NOT_DONE',
+          achievement: { users: { some: { userId, status: 'ATRAKINTAS' } } },
+        },
+        data: { status: 'DONE', completedAt: new Date() },
+      });
+      return count;
+    },
+
     getPlan(userId: number, planId: number) {
       return prisma.collectionPlan.findFirst({
         where: { id: planId, userId },
@@ -61,10 +74,7 @@ export function createPlanRepo(prisma: PrismaClient) {
       });
     },
 
-    /**
-     * Punkto būsenos keitimas tik savo plane (PLN-05).
-     * DONE nustato completedAt, NOT_DONE jį išvalo. Grąžina false, jei punktas nerastas arba svetimas.
-     */
+
     async setItemStatus(userId: number, planId: number, itemId: number, status: PlanItemStatus) {
       const { count } = await prisma.planItem.updateMany({
         where: { id: itemId, planId, plan: { userId } },
