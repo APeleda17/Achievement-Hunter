@@ -30,6 +30,19 @@ DI atsakymai pateikiami **anglų kalba**, sąsaja – lietuvių. Šio antro spri
 realizacija pasiekiama šakoje **`sprint-2-mantas`**. Toliau pateiktos instrukcijos
 skirtos būtent šiai šakai.
 
+## 3 sprinto funkcionalumas
+
+| NI | Funkcija | Reikalavimai |
+|---|---|---|
+| NI-9 | Pasiekimo prieinamumas (Prieinamas / Neprieinamas / Nežinoma), sunkumas ir tipas pagal DI; atidarius žaidimą neįvertinti pasiekimai įvertinami automatiškai | PRI-01–PRI-03, DIS-06 |
+| NI-10 | Filtrai pagal būseną, prieinamumą, sunkumą ir tipą, „Išvalyti filtrus“ | PAS-04, API-10 |
+| NI-11 | Rūšiavimas pagal pavadinimą, retumą („Steam“ visų žaidėjų %) ir sunkumą abiem kryptimis | PAS-05, SDG-05 |
+| NI-12 | „Achievement Hunting“ planas: turimas laikas 15–600 min., norimas sunkumas ir tipas | PLN-01–PLN-03 |
+| NI-13 | Planų sąrašas, plano peržiūra, punktų žymėjimas; atrakinti pasiekimai pažymimi automatiškai | PLN-04, PLN-05 |
+
+Kaip ir 2 sprinte, DI pagrindimai pateikiami **anglų kalba**, sąsaja – lietuvių.
+Neprieinami pasiekimai į planus niekada neįtraukiami.
+
 ## Technologijos
 
 - **Klientas** (`client/`): React 18 + TypeScript, Vite (dev serveris `:5173`)
@@ -240,21 +253,23 @@ Kitaip sistema parodys pranešimą su šiais žingsniais.
 
 ```
 client/                 React + TS (Vite)
-  src/pages/            Ekranai: LoginPage, LibraryPage, GamePage
+  src/pages/            Ekranai: LoginPage, LibraryPage, GamePage, PlansPage, PlanPage
   src/components/       Bendri komponentai (antraštė, pranešimai, progreso juosta)
   src/messages.ts       Visi lietuviški tekstai vienoje vietoje
   src/api.ts            Užklausos serveriui
+  src/aiJob.ts          DI užduočių laukimas ir automatinio įvertinimo eilė
 server/                 Express + TS
   prisma/               DB schema ir migracijos
   src/auth/        AUT  Steam OpenID, sesijos, /api/me
   src/library/     BIB  Žaidimų biblioteka ir paieška
-  src/achievements/PAS  Pasiekimai, progreso skaičiavimas
+  src/achievements/PAS  Pasiekimai, progresas, filtrai, rūšiavimas, retumas
   src/sync/        ATN  Duomenų atnaujinimas (viena transakcija)
   src/steam/       SDG  Steam Web API klientas (timeout, pakartojimas)
   src/db/          DPK  Duomenų prieiga
   src/ai/          DIS, DIK  DI funkcijos, Ollama adapteriai ir API
   src/sources/     ISR  Viešų šaltinių paieška ir ištraukos
   src/jobs/        EIL  Bendra DI užduočių eilė
+  src/plans/       PLN  „Achievement Hunting“ planai
   tests/                Vitest + supertest testai
 docker-compose.yml      PostgreSQL
 .env.example            Konfigūracijos pavyzdys
@@ -272,7 +287,7 @@ Visi `/api/*` endpointai, išskyrus viešą `/api/health`, reikalauja prisijungi
 | POST | `/auth/logout` | Atsijungimas |
 | GET | `/api/me` | Prisijungusio naudotojo profilis |
 | GET | `/api/games?search=` | Žaidimų biblioteka (su paieška) |
-| GET | `/api/games/:appId/achievements` | Žaidimo pasiekimai ir progresas |
+| GET | `/api/games/:appId/achievements` | Žaidimo pasiekimai ir progresas; `?status=&availability=&difficulty=&type=&sort=&order=` |
 | POST | `/api/sync` | Atnaujinti visą biblioteką |
 | POST | `/api/games/:appId/sync` | Atnaujinti vieno žaidimo pasiekimus |
 | GET | `/api/health` | Vieša serverio pasiekiamumo patikra |
@@ -282,9 +297,14 @@ Visi `/api/*` endpointai, išskyrus viešą `/api/health`, reikalauja prisijungi
 | POST | `/api/ai/help` | Pagalba pagal 1–500 simbolių problemą |
 | GET | `/api/ai/help?appId=&apiName=` | Privati pasiekimo pagalbos istorija |
 | GET | `/api/jobs/:id` | Savo DI užduoties būsena ir rezultatas |
+| POST | `/api/ai/availability` | Pasiekimo prieinamumo, sunkumo ir tipo įvertinimas (200 arba 202) |
+| POST | `/api/plans` | „Achievement Hunting“ plano sudarymas (202 + `jobId`) |
+| GET | `/api/plans?appId=` | Savo planų sąrašas su progresu |
+| GET | `/api/plans/:id` | Plano peržiūra (atrakinti pasiekimai pažymimi atliktais) |
+| PATCH | `/api/plans/:id/items/:itemId` | Punkto būsena `{ "status": "ATLIKTAS" \| "NEATLIKTAS" }` |
 
 Klaidos grąžinamos formatu `{ "error": { "code": "..." } }`. Kodai: `UNAUTHORIZED`, `AUTH_FAILED`, `PROFILE_PRIVATE`,
-`NOT_FOUND`, `VALIDATION_ERROR`, `STEAM_UNAVAILABLE` (su `hasCachedData`), `SYNC_IN_PROGRESS` (`409`).
+`NOT_FOUND`, `VALIDATION_ERROR`, `STEAM_UNAVAILABLE` (su `hasCachedData`), `SYNC_IN_PROGRESS` (`409`),`NO_CANDIDATES` (`422`, planui nėra tinkamų pasiekimų).
 
 ## 2 sprintas: NI-2 „Achievement Redo“
 
@@ -545,6 +565,59 @@ Remove-Item Env:RUN_HELP_TESTS
 ```
 
 Reikalavimų atsekamumas ir rezultatai: [NI-5 testavimas](docs/NI-5-testavimas.md).
+
+## 3 sprintas: NI-9 – NI-13
+
+### Atnaujinimas iš 2 sprinto
+
+3 sprintas prideda migraciją `ni12_achievement_hunting`. Po `git pull`:
+
+```powershell
+npm.cmd run install:all
+cd server
+npx.cmd prisma migrate deploy
+npx.cmd prisma generate
+cd ..
+npm.cmd test
+npm.cmd run dev
+```
+
+Naujų `.env` kintamųjų nėra – naudojami tie patys `OLLAMA_*` nustatymai.
+
+### Prieinamumas, sunkumas ir retumas (NI-9, NI-11)
+
+- Atidarius žaidimą, kiekvienas dar neįvertintas pasiekimas įvertinamas **automatiškai, po vieną**
+  (`POST /api/ai/availability`). Vienas įvertinimas su lokaliu modeliu trunka apie 10–40 s.
+- Įvertinimas saugomas DB (bendras visiems naudotojams) ir laikomas galiojančiu 30 d.
+- „Neprieinamas“ priskiriamas tik tada, kai DI tai pagrindžia konkrečiu šaltiniu; kitaip – „Nežinoma“.
+- Jei serveris ar Ollama nepasiekiami, automatinis vertinimas sustoja po pirmos klaidos;
+  vėliau galima spausti „Įvertinti“ arba perkrauti puslapį.
+- Retumas (visų „Steam“ žaidėjų %) gaunamas per `GetGlobalAchievementPercentagesForApp`
+  ir atnaujinamas ne dažniau kaip kas 24 h. „Steam“ nepasiekiamas – sąrašas vis tiek rodomas.
+
+### Filtrai ir rūšiavimas (NI-10, NI-11)
+
+Žaidimo puslapyje: būsena, prieinamumas, sunkumas, tipas, rūšiavimas (Steam tvarka, pavadinimas,
+retumas, sunkumas) ir kryptis. Filtrai pagal prieinamumą, sunkumą ir tipą rodo tik **jau įvertintus**
+pasiekimus. Progresas visada skaičiuojamas iš visų pasiekimų.
+
+### „Achievement Hunting“ planas (NI-12, NI-13)
+
+1. Žaidimo puslapyje nurodykite turimą laiką (15–600 min.) ir, jei norite, sunkumą bei tipą.
+2. Kandidatai – tik neatrakinti ir ne „Neprieinami“ pasiekimai. Jei tokių nėra – `NO_CANDIDATES`, DI nekviečiamas.
+3. DI sudaro planą, o serveris patikrina: punktai tik iš kandidatų, be pasikartojimų,
+   bendra trukmė ne didesnė už turimą laiką (netelpantys punktai pašalinami).
+4. Planas atsidaro adresu `/planai/:id`; visi planai – `/planai` (nuoroda „Planai“ antraštėje).
+5. Punktus galima pažymėti atliktais; atidarius planą, jau atrakinti pasiekimai pažymimi automatiškai.
+
+### Testai
+
+```powershell
+npm.cmd test
+```
+
+3 sprinto serverio testai: `planRepo`, `rarity`, `availability`, `achievementFilters`, `plans`, `planView`.
+Kliento testai: `AchievementAssessment`, `PlanForm`, `PlanPage`. Ollama ir „Steam“ testuose pakeisti mock'ais.
 
 ## Darbo su Git tvarka
 
