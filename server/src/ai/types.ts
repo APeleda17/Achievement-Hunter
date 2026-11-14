@@ -17,6 +17,7 @@ export interface AiClient {
   explain(input: ExplainInput, signal: AbortSignal): Promise<{ text: string; model: string }>;
   guide?: GuideAiClient['guide'];
   help?: HelpAiClient['help'];
+  assess?: AssessmentAiClient['assess'];
 }
 
 export interface GuideStep { instruction: string; sourceIds: number[] }
@@ -41,4 +42,35 @@ export interface HelpAiClient {
   help(input: HelpInput, signal: AbortSignal): Promise<{ causes: HelpCause[]; steps: GuideStep[]; model: string }>;
 }
 export interface HelpDto extends GuideDto { problem: string; causes: HelpCause[] }
-export type AiResultDto = ExplanationDto | GuideDto | HelpDto;
+
+// NI-9: prieinamumo ir sunkumo įvertinimas (PRI-01..03, DIS-06)
+export const AVAILABILITY_VALUES = ['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN'] as const;
+export const DIFFICULTY_VALUES = ['EASY', 'MEDIUM', 'HARD', 'VERY_HARD'] as const;
+// Fiksuotas tipų sąrašas, kad pagal tipą būtų galima filtruoti (NI-10)
+export const ACHIEVEMENT_TYPE_VALUES = ['STORY', 'COLLECTION', 'COMBAT', 'CHALLENGE', 'EXPLORATION', 'MULTIPLAYER', 'PROGRESSION', 'OTHER'] as const;
+export type AiAvailability = (typeof AVAILABILITY_VALUES)[number];
+export type AiDifficulty = (typeof DIFFICULTY_VALUES)[number];
+export type AchievementTypeValue = (typeof ACHIEVEMENT_TYPE_VALUES)[number];
+
+export interface AssessmentInput extends ExplainInput { sources: GuideEvidence[] }
+export interface Assessment {
+  availability: AiAvailability;
+  difficulty: AiDifficulty;
+  achievementType: AchievementTypeValue;
+  reason: string;
+  sourceIds: number[];
+}
+export interface AssessmentAiClient {
+  assess(input: AssessmentInput, signal: AbortSignal): Promise<Assessment & { model: string }>;
+}
+export interface AvailabilityDto {
+  /** DB reikšmė: PRIEINAMAS | NEPRIEINAMAS | NEZINOMA */
+  availability: 'PRIEINAMAS' | 'NEPRIEINAMAS' | 'NEZINOMA';
+  difficulty: AiDifficulty | null;
+  achievementType: string | null;
+  reason: string;
+  assessedAt: string;
+  model: string;
+  generatedByAi: true;
+}
+export type AiResultDto = ExplanationDto | GuideDto | HelpDto | AvailabilityDto;

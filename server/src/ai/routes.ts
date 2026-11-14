@@ -7,6 +7,7 @@ import type { AiResultDto } from './types.js';
 import type { ExplainService } from './explainService.js';
 import type { GuideService } from './guideService.js';
 import type { HelpService } from './helpService.js';
+import type { AvailabilityService } from './availabilityService.js';
 import { problemSchema } from './helpValidation.js';
 
 const explainBody = z.object({
@@ -14,8 +15,18 @@ const explainBody = z.object({
   apiName: z.string().trim().min(1).max(255),
 }).strict();
 
-export function createAiRouter(service: ExplainService, jobs: JobQueue<AiResultDto>, guides: GuideService, help: HelpService) {
+export function createAiRouter(service: ExplainService, jobs: JobQueue<AiResultDto>, guides: GuideService, help: HelpService, availability: AvailabilityService) {
   const router = Router();
+  // NI-9 / API-09: prieinamumo ir sunkumo įvertinimas (200 – išsaugotas, 202 – sukurta užduotis)
+  router.post('/ai/availability', async (req, res, next) => {
+    try {
+      const parsed = explainBody.safeParse(req.body);
+      if (!parsed.success) throw new AppError(400, 'VALIDATION_ERROR');
+      const answer = await availability.availability(currentUserId(req), parsed.data.appId, parsed.data.apiName);
+      if (answer.kind === 'result') res.json(answer.result);
+      else res.status(202).json({ jobId: answer.job.id, status: answer.job.status });
+    } catch (error) { next(error); }
+  });
   router.get('/guides/:id/sources', async (req, res, next) => {
     try {
       const parsed = z.string().regex(/^[1-9]\d*$/).transform(Number).pipe(z.number().int().positive().max(2_147_483_647)).safeParse(req.params.id);

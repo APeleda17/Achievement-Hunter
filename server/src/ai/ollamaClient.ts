@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { AppError } from '../errors.js';
 import { EXPLAIN_SYSTEM_PROMPT, GUIDE_SYSTEM_PROMPT } from './prompts.js';
-import type { AiClient, GuideAiClient, HelpAiClient } from './types.js';
+import type { AiClient, AssessmentAiClient, GuideAiClient, HelpAiClient } from './types.js';
 import { createOllamaHelp } from './ollamaHelp.js';
+import { createOllamaAssess } from './ollamaAssess.js';
 import { validateGuide } from './guideValidation.js';
 import { normalized } from '../sources/extract.js';
 import { missionGoalFor, validateMissionGoal } from './achievementGoals.js';
@@ -46,10 +47,11 @@ export function createOllamaClient(options: {
   model: string;
   timeoutMs?: number;
   fetch?: typeof fetch;
-}): AiClient & GuideAiClient & HelpAiClient {
+}): AiClient & GuideAiClient & HelpAiClient & AssessmentAiClient {
   const send = options.fetch ?? fetch;
   return {
     help: createOllamaHelp(options),
+    assess: createOllamaAssess(options),
     async guide(input, parentSignal) {
       const missionGoal = missionGoalFor(input);
       const condition = normalized(input.description);
