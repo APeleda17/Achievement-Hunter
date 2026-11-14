@@ -13,6 +13,7 @@ export function Header() {
       {me && (
         <div className="user">
           {me.avatarUrl && <img className="avatar" src={me.avatarUrl} alt="" width={32} height={32} />}
+          <Link to="/planai">{t.plans}</Link>
           <span className="user-name">{me.personaName}</span>
           <button type="button" className="button secondary" onClick={() => void logout()}>
             {t.logout}

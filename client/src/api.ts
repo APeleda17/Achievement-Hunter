@@ -1,4 +1,7 @@
-import type { AiJob, ExplainResponse, GameAchievements, Guide, GuideResponse, HelpAnswer, HelpResponse, Library, Me } from './types';
+import type {
+  AchievementQuery, AiJob, AvailabilityAssessment, AvailabilityResponse, ExplainResponse, GameAchievements, Guide, GuideResponse,
+  HelpAnswer, HelpResponse, Library, Me, Plan, PlanRequest, PlanSummary,
+} from './types';
 
 // Visos užklausos eina į tą patį adresą (Vite proxy → :3000), todėl sesijos slapukas
 // siunčiamas automatiškai. Steam API raktas naršyklėje niekada nenaudojamas.
@@ -19,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: 'GET' | 'POST', url: string, options: { body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+async function request<T>(method: 'GET' | 'POST'| 'PATCH', url: string, options: { body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, {
@@ -48,7 +51,10 @@ export const api = {
   getLibrary: (search: string) =>
     request<Library>('GET', `/api/games${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   syncLibrary: () => request<Library>('POST', '/api/sync'),
-  getAchievements: (appId: number) => request<GameAchievements>('GET', `/api/games/${appId}/achievements`),
+    getAchievements: (appId: number, query: AchievementQuery = {}) => {
+    const params = new URLSearchParams(Object.entries(query).filter(([, value]) => value) as [string, string][]).toString();
+    return request<GameAchievements>('GET', `/api/games/${appId}/achievements${params ? `?${params}` : ''}`);
+  },
   syncGame: (appId: number) => request<GameAchievements>('POST', `/api/games/${appId}/sync`),
   explain: (appId: number, apiName: string, signal?: AbortSignal) =>
     request<ExplainResponse>('POST', '/api/ai/explain', { body: { appId, apiName }, signal }),
@@ -59,6 +65,17 @@ export const api = {
   help: (appId: number, apiName: string, problem: string, signal?: AbortSignal) =>
     request<HelpResponse>('POST', '/api/ai/help', { body: { appId, apiName, problem }, signal }),
   getHelpJob: (id: string, signal?: AbortSignal) => request<AiJob<HelpAnswer>>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
+  assessAvailability: (appId: number, apiName: string, signal?: AbortSignal) =>
+    request<AvailabilityResponse>('POST', '/api/ai/availability', { body: { appId, apiName }, signal }),
+  getAvailabilityJob: (id: string, signal?: AbortSignal) =>
+    request<AiJob<AvailabilityAssessment>>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
+  createPlan: (body: PlanRequest, signal?: AbortSignal) =>
+    request<{ jobId: string; status: 'LAUKIA' | 'VYKDOMA' }>('POST', '/api/plans', { body, signal }),
+  getPlanJob: (id: string, signal?: AbortSignal) => request<AiJob<Plan>>('GET', `/api/jobs/${encodeURIComponent(id)}`, { signal }),
+  getPlans: (appId?: number) => request<{ plans: PlanSummary[] }>('GET', `/api/plans${appId !== undefined ? `?appId=${appId}` : ''}`),
+  getPlan: (id: number) => request<Plan>('GET', `/api/plans/${id}`),
+  setPlanItemStatus: (planId: number, itemId: number, status: 'ATLIKTAS' | 'NEATLIKTAS') =>
+    request<Plan>('PATCH', `/api/plans/${planId}/items/${itemId}`, { body: { status } }),
   getHelpHistory: (appId: number, apiName: string, signal?: AbortSignal) =>
     request<{ requests: HelpAnswer[] }>('GET', `/api/ai/help?${new URLSearchParams({ appId: String(appId), apiName })}`, { signal }),
 };

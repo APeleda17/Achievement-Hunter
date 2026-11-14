@@ -138,3 +138,25 @@ p { margin: 0 0 8px; }
 .help-panel textarea { display: block; width: 100%; box-sizing: border-box; margin-top: .5rem; padding: .65rem; color: inherit; background: var(--bg, #111827); border: 1px solid var(--border, #46516b); border-radius: .35rem; font: inherit; resize: vertical; }
 .help-history { margin-top: 1rem; }
 .history-question { background: none; border: 0; color: var(--accent, #80bfff); padding: .25rem 0; cursor: pointer; text-align: left; font: inherit; overflow-wrap: anywhere; }
+
+.achievement-assessment { margin-top: 8px; }
+.tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tag { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); }
+.tag-muted { color: var(--muted); font-weight: 400; }
+.tag-prieinamas { color: var(--success); border-color: var(--success); }
+.tag-neprieinamas { color: var(--error); border-color: var(--error); }
+.tag-nezinoma { color: var(--warning); border-color: var(--warning); }
+.small-button { padding: 2px 10px; font-size: 0.8rem; }
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 8px 0 12px; }
+.filters label { display: grid; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.filters select, .filters input {
+  min-width: 140px; padding: 8px 10px; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); font: inherit;
+}
+.filters input[aria-invalid="true"] { border-color: var(--error); }
+.plan-form { margin: 16px 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.plan-form h2 { margin-top: 0; }
+.plan-row { grid-template-columns: 1fr minmax(160px, 260px); }
+.plan-items { padding: 0; }
+.plan-check { width: 22px; height: 22px; margin: 4px; accent-color: var(--success); }
+.header .user a { color: var(--text); }
