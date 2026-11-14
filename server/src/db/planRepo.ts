@@ -54,6 +54,7 @@ export function createPlanRepo(prisma: PrismaClient) {
       return prisma.collectionPlan.findFirst({
         where: { id: planId, userId },
         include: {
+          game: { select: { name: true } },
           criteria: true,
           items: { orderBy: { position: 'asc' }, include: { achievement: true } },
         },

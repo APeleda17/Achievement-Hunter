@@ -18,6 +18,7 @@ export interface AiClient {
   guide?: GuideAiClient['guide'];
   help?: HelpAiClient['help'];
   assess?: AssessmentAiClient['assess'];
+  plan?: PlanAiClient['plan'];
 }
 
 export interface GuideStep { instruction: string; sourceIds: number[] }
@@ -73,4 +74,52 @@ export interface AvailabilityDto {
   model: string;
   generatedByAi: true;
 }
-export type AiResultDto = ExplanationDto | GuideDto | HelpDto | AvailabilityDto;
+
+export interface PlanCandidate {
+  candidateId: number;
+  achievementId: number;
+  apiName: string;
+  name: string;
+  description: string;
+  difficulty: AiDifficulty | null;
+  achievementType: string | null;
+  rarityPercent: number | null;
+}
+export interface PlanCriteriaDto {
+  availableMinutes: number;
+  desiredDifficulty: AiDifficulty | null;
+  achievementType: AchievementTypeValue | null;
+}
+export interface PlanInput {
+  gameName: string;
+  criteria: PlanCriteriaDto;
+  candidates: PlanCandidate[];
+}
+export interface PlanDraftItem { candidateId: number; estimatedMinutes: number; justification: string }
+export interface PlanAiClient {
+  plan(input: PlanInput, signal: AbortSignal): Promise<{ items: PlanDraftItem[]; model: string }>;
+}
+export interface PlanItemDto {
+  id: number;
+  position: number;
+  apiName: string;
+  name: string;
+  description: string | null;
+  iconUrl: string | null;
+  estimatedMinutes: number;
+  justification: string;
+  status: 'NEATLIKTAS' | 'ATLIKTAS';
+  completedAt: string | null;
+}
+export interface PlanDto {
+  id: number;
+  appId: number;
+  gameName: string;
+  createdAt: string;
+  model: string;
+  generatedByAi: true;
+  criteria: PlanCriteriaDto;
+  totalMinutes: number;
+  items: PlanItemDto[];
+}
+export type AiResultDto = ExplanationDto | GuideDto | HelpDto | AvailabilityDto | PlanDto;
