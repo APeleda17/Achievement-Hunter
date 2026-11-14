@@ -70,6 +70,14 @@ export function createSteamMock() {
     getPlayerAchievements: vi.fn<SteamClient['getPlayerAchievements']>(async (_steamId, appId) =>
       ACHIEVEMENTS[appId] ? playerOf(...ACHIEVEMENTS[appId]) : null,
     ),
+        // SDG-05: ACH_1 – 90 %, ACH_2 – 80 % ir t. t. (kuo didesnis numeris, tuo retesnis)
+    getGlobalAchievementPercentages: vi.fn<SteamClient['getGlobalAchievementPercentages']>(async (appId) =>
+      new Map(
+        ACHIEVEMENTS[appId]
+          ? Array.from({ length: ACHIEVEMENTS[appId][0] }, (_, i) => [`ACH_${i + 1}`, Math.max(100 - (i + 1) * 10, 0.5)] as const)
+          : [],
+      ),
+    ),
   };
 }
 

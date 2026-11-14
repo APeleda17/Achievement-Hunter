@@ -18,6 +18,7 @@ export type ErrorCode =
   | 'NO_RELIABLE_INFO'
   | 'SOURCES_UNAVAILABLE'
   | 'SOURCE_CHANGED'
+  | 'NO_CANDIDATES'
   | 'INTERNAL_ERROR';
 
 export class AppError extends Error {

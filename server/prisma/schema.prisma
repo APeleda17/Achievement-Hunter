@@ -18,7 +18,23 @@ enum PasiekimoBusena {
 
   @@map("pasiekimo_busena")
 }
+// Sąrašas „Sunkumas“ (44 lentelė, 3 sprintas)
+enum Difficulty {
+  EASY      @map("LENGVAS")
+  MEDIUM    @map("VIDUTINIS")
+  HARD      @map("SUNKUS")
+  VERY_HARD @map("LABAI_SUNKUS")
 
+  @@map("sunkumas")
+}
+
+// Sąrašas „PlanoPunktoBūsena“ (44 lentelė, 3 sprintas)
+enum PlanItemStatus {
+  NOT_DONE @map("NEATLIKTAS")
+  DONE     @map("ATLIKTAS")
+
+  @@map("plano_punkto_busena")
+}
 // Naudotojas – sukuriamas po pirmo sėkmingo prisijungimo per Steam (FR-02).
 // Slaptažodis nesaugomas (AUT-06).
 model User {
@@ -36,7 +52,7 @@ model User {
   games        UserGame[]
   achievements UserAchievement[]
   helpRequests HelpRequest[]
-
+  plans        CollectionPlan[]
   @@map("naudotojas")
 }
 
@@ -50,6 +66,7 @@ model Game {
 
   achievements Achievement[]
   users        UserGame[]
+  plans        CollectionPlan[]
 
   @@map("zaidimas")
 }
@@ -63,12 +80,26 @@ model Achievement {
   description String? @map("aprasymas")
   iconUrl     String? @map("ikonos_url")
 
+  // 3 sprintas (NI-9–NI-11). Bendri visiems naudotojams; Steam sinchronizacija jų neliečia.
+  difficulty         Difficulty? @map("sunkumas")
+  achievementType    String?     @map("tipas")
+  // "PRIEINAMAS" | "NEPRIEINAMAS" | "NEZINOMA" – ribojama CHECK (migracijoje)
+  availability       String?     @map("prieinamumas")
+  availabilityReason String?     @map("prieinamumo_pagrindimas")
+  assessedAt         DateTime?   @map("ivertinta") @db.Timestamptz(3)
+  assessmentModel    String?     @map("vertinimo_modelis")
+  // Steam GetGlobalAchievementPercentagesForApp, 0–100 (SDG-05)
+  rarityPercent      Float?      @map("retumas_proc")
+  rarityUpdatedAt    DateTime?   @map("retumas_atnaujintas") @db.Timestamptz(3)
+
   game  Game              @relation(fields: [appId], references: [appId], onDelete: Cascade)
   users UserAchievement[]
   explanation AchievementExplanation?
   guide Guide?
   sourceExcerpts SourceExcerpt[]
   helpRequests HelpRequest[]
+
+  planItems PlanItem[]
 
   @@unique([appId, apiName])
   @@map("pasiekimas")
@@ -212,4 +243,60 @@ model HelpRequest {
   @@unique([userId,inputHash])
   @@index([userId,achievementId,createdAt])
   @@map("pagalbos_uzklausa")
+}
+
+
+// ---- 3 sprintas: „Achievement Hunting“ planai (NI-12, NI-13) ----
+
+// RinkimoPlanas – struktūrinė klasė: kriterijai ir punktai kuriami ir trinami kartu su planu.
+model CollectionPlan {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("naudotojo_id")
+  appId     Int      @map("app_id")
+  // Kuris DI modelis sudarė planą
+  model     String   @map("modelis")
+  createdAt DateTime @default(now()) @map("sukurta") @db.Timestamptz(3)
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game     Game          @relation(fields: [appId], references: [appId], onDelete: Cascade)
+  criteria PlanCriteria?
+  items    PlanItem[]
+
+  @@index([userId, createdAt])
+  @@map("rinkimo_planas")
+}
+
+// PlanoKriterijai – naudotojo nurodytos plano sąlygos (U14)
+model PlanCriteria {
+  // Ryšys 1:1 su planu – plano id kartu yra ir pirminis raktas
+  planId            Int         @id @map("plano_id")
+  // 15–600 min. – ribojama CHECK (GVS-16)
+  availableMinutes  Int         @map("turimas_laikas_min")
+  desiredDifficulty Difficulty? @map("norimas_sunkumas")
+  achievementType   String?     @map("pasiekimo_tipas")
+
+  plan CollectionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("plano_kriterijai")
+}
+
+// PlanoPunktas – vienas plano žingsnis (U14, U16)
+model PlanItem {
+  id               Int            @id @default(autoincrement())
+  planId           Int            @map("plano_id")
+  achievementId    Int            @map("pasiekimo_id")
+  // >= 1 – ribojama CHECK
+  position         Int            @map("eiles_numeris")
+  // > 0 – ribojama CHECK
+  estimatedMinutes Int            @map("numatoma_trukme_min")
+  justification    String         @map("pagrindimas")
+  status           PlanItemStatus @default(NOT_DONE) @map("busena")
+  completedAt      DateTime?      @map("atlikta_kada") @db.Timestamptz(3)
+
+  plan        CollectionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  achievement Achievement    @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, position])
+  @@unique([planId, achievementId])
+  @@map("plano_punktas")
 }

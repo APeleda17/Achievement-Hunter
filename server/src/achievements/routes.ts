@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { currentUserId } from '../auth/requireAuth.js';
+import { achievementQuerySchema } from './achievementQuery.js';
 import { AppError } from '../errors.js';
 import type { AchievementsService } from './achievementsService.js';
 
@@ -20,10 +21,13 @@ function parseAppId(params: unknown): number {
 export function createAchievementsRouter(achievements: AchievementsService) {
   const router = Router();
 
-  // FR-07, FR-08, FR-09
+   // FR-07, FR-08, FR-09; NI-10, NI-11: ?status=&availability=&difficulty=&type=&sort=&order= (API-10)
   router.get('/games/:appId/achievements', async (req, res, next) => {
     try {
-      res.json(await achievements.getAchievements(currentUserId(req), parseAppId(req.params)));
+      const appId = parseAppId(req.params);
+      const query = achievementQuerySchema.safeParse(req.query);
+      if (!query.success) throw new AppError(400, 'VALIDATION_ERROR');
+      res.json(await achievements.getAchievements(currentUserId(req), appId, query.data));
     } catch (err) {
       next(err);
     }

@@ -5,6 +5,8 @@ import { Loading } from './components/common';
 import { LoginPage } from './pages/LoginPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { GamePage } from './pages/GamePage';
+import { PlansPage } from './pages/PlansPage';
+import { PlanPage } from './pages/PlanPage';
 
 export function App() {
   return (
@@ -41,6 +43,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<LibraryPage />} />
       <Route path="/zaidimai/:appId" element={<GamePage />} />
+      <Route path="/planai" element={<PlansPage />} />
+      <Route path="/planai/:planId" element={<PlanPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
