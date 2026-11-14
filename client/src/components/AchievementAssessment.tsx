@@ -72,7 +72,7 @@ export function AchievementAssessment({ appId, achievement, queue, onUnauthorize
       if (error instanceof ApiError && error.status === 401) { serial?.halt(); onUnauthorized?.(); return; }
       const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
       // DI nepasiekiamas ar perkrautas – kitų automatiškai nebevertiname
-      if (code === 'AI_UNAVAILABLE' || code === 'AI_QUEUE_FULL') serial?.halt();
+      if (code !== 'AI_INVALID_RESPONSE') serial?.halt();
       setState({ kind: 'error', message: errorText(code) });
     } finally {
       if (current.current === controller) current.current = null;
