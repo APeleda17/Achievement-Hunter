@@ -10,6 +10,7 @@ import { createLibraryService } from './library/libraryService.js';
 import { createLibraryRouter } from './library/routes.js';
 import { createAchievementsService } from './achievements/achievementsService.js';
 import { createAchievementsRouter } from './achievements/routes.js';
+import { createRarityService } from './achievements/rarityService.js';
 import { createAiRepo } from './db/aiRepo.js';
 import { createExplainService } from './ai/explainService.js';
 import { createAiRouter } from './ai/routes.js';
@@ -59,7 +60,7 @@ export function createApp(deps: AppDeps) {
   const library = createLibraryService(deps.prisma, sync);
   app.use('/api', createLibraryRouter(library, sync));
 
-  const achievements = createAchievementsService(deps.prisma, sync);
+  const achievements = createAchievementsService(deps.prisma, sync, createRarityService(deps.prisma, deps.steam));
   app.use('/api', createAchievementsRouter(achievements));
 
   const jobs = deps.jobs ?? createJobQueue<AiResultDto>();
